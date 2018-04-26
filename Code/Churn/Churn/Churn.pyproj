@@ -5,8 +5,7 @@
     <ProjectGuid>3fd38448-58f7-4533-affc-e47c2c7ad5c9</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>Churn.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <SearchPath>utility</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>Churn</Name>
@@ -22,6 +21,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Churn.py" />
+    <Compile Include="config.py" />
+    <Compile Include="utility\df.py" />
+    <Compile Include="utility\iolib.py" />
+    <Compile Include="utility\plotlib.py" />
+    <Compile Include="utility\__init__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="utility\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
