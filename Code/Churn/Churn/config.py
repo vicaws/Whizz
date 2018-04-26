@@ -12,12 +12,18 @@ class Config:
     TYPE_MONTHLY = "Monthly"
     TYPE_ANNUAL = "Annual"
 
+    # Output
+    PLOT_FOLDER = "../../../Result/Plot/"
+
 class ResearchConfig(Config):
     
     FILE_SUBFOLDER = "20180426/"
     
     CUTOFF_DATE = "2018-04-20"
     RENEWAL_GAP = 5
+
+    PLOT_SUBSPT_DIST = "subspt_dist.png"
+    PLOT_ACTIVE_SUBSPT = "active_subspt.png"
     
 class TestConfig(Config):
     pass

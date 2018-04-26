@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import config
 import utility.iolib
 import utility.plotlib
+import utility.df
 
 if __name__ == "__main__":
 
@@ -18,4 +19,13 @@ if __name__ == "__main__":
     print("Complete loading data for subscription and lesson history!")
 
     # Distribution of subscription length per pupil
-    utility.plotlib.subscpt_dist(df_subspt, cfg)
+    utility.plotlib.subspt_dist(df_subspt, cfg)
+
+    print("Start preparing the time-series data for subscription.")
+    df_subspt_timeseries = utility.df.subspt_timeseries(df_subspt, cfg)
+
+    # Active subscriptions over time
+    # Average remaining subscription length
+    utility.plotlib.active_subspt(df_subspt_timeseries, cfg)
+
+    
