@@ -25,7 +25,8 @@ if __name__ == "__main__":
     df_subspt_timeseries = utility.df.subspt_timeseries(df_subspt, cfg)
 
     # Active subscriptions over time
-    # Average remaining subscription length
+    # Average residual subscription length per pupil
     utility.plotlib.active_subspt(df_subspt_timeseries, cfg)
+
 
     
