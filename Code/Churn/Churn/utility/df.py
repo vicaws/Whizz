@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 def _remove_unsteady_data(df_subspt_timeseries):
+
     first_date = df_subspt_timeseries.index.min()
     threshold_date_mon = first_date + pd.to_timedelta(31, unit='D')
     threshold_date_ann = first_date + pd.to_timedelta(1, unit='Y')
@@ -11,19 +12,23 @@ def _remove_unsteady_data(df_subspt_timeseries):
     df_subspt_timeseries['num_rnl_m2a'] = df_subspt_timeseries['num_rnl_m2a'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
     df_subspt_timeseries['num_rtn_m2m'] = df_subspt_timeseries['num_rtn_m2m'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
     df_subspt_timeseries['num_rtn_m2a'] = df_subspt_timeseries['num_rtn_m2a'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_new_mon'] = df_subspt_timeseries['num_new_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    #df_subspt_timeseries['num_new_mon'] = df_subspt_timeseries['num_new_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
 
     df_subspt_timeseries['num_ccl_ann'] = df_subspt_timeseries['num_ccl_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
     df_subspt_timeseries['num_rnl_a2a'] = df_subspt_timeseries['num_rnl_a2a'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
     df_subspt_timeseries['num_rnl_a2m'] = df_subspt_timeseries['num_rnl_a2m'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
     df_subspt_timeseries['num_rtn_a2a'] = df_subspt_timeseries['num_rtn_a2a'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
     df_subspt_timeseries['num_rtn_a2m'] = df_subspt_timeseries['num_rtn_a2m'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)   
-    df_subspt_timeseries['num_new_ann'] = df_subspt_timeseries['num_new_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    #df_subspt_timeseries['num_new_ann'] = df_subspt_timeseries['num_new_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
 
     df_subspt_timeseries['num_subscriptions_monthly'] = df_subspt_timeseries['num_subscriptions_monthly'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
     df_subspt_timeseries['num_subscriptions_annual'] = df_subspt_timeseries['num_subscriptions_annual'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_subscriptions'] = df_subspt_timeseries['num_subscriptions'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['res_subscriptions_length'] = df_subspt_timeseries['res_subscriptions_length'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_subscriptions'] = df_subspt_timeseries['num_subscriptions'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['res_subscriptions_length_mon'] = df_subspt_timeseries['res_subscriptions_length_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['res_subscriptions_length_ann'] = df_subspt_timeseries['res_subscriptions_length_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['res_subscriptions_length'] = df_subspt_timeseries['res_subscriptions_length'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+
+    print("Due to configuration, data as of unsteady period have been removed!")
 
     return df_subspt_timeseries
 
@@ -39,29 +44,43 @@ def subspt_timeseries(df_subspt, configuration):
     num_subspt_monthly = np.zeros(len(dates))   # number of active monthly subscriptions
     num_subspt_annual = np.zeros(len(dates))    # number of active annual subscriptions 
     num_subspt = np.zeros(len(dates))
+    res_len_monthly = np.zeros(len(dates))      # average residual length of active monthly subscriptions
+    res_len_annual = np.zeros(len(dates))       # average residual length of active annual subscriptions
     res_subspt_length = np.zeros(len(dates))    # average residual length of active subscriptions
     
     temp = df_subspt.groupby(['subscription_start_date', 'subscription_length']).count()
     for row in temp.itertuples(index=True):
         start_date, length = row.Index
         i_start = dates.index(start_date)
-    
-        # Number of subscriptions
+        
         if length > 31:
+            # Number of subscriptions
             num_subspt_annual[i_start : i_start+length+1] = \
             num_subspt_annual[i_start : i_start+length+1] + 1*row.subscription_type
+            # Residual subscrption length
+            res_len_annual[i_start : i_start+length+1] = \
+            res_len_annual[i_start : i_start+length+1] + np.arange(length+1,0,-1)*row.subscription_type
         else:
+            # Number of subscriptions
             num_subspt_monthly[i_start : i_start+length+1] = \
             num_subspt_monthly[i_start : i_start+length+1] + 1*row.subscription_type
-        # Residual subscrption length
-        res_subspt_length[i_start : i_start+length+1] = \
-        res_subspt_length[i_start : i_start+length+1] + np.arange(length+1,0,-1)*row.subscription_type
-
+            # Residual subscrption length
+            res_len_monthly[i_start : i_start+length+1] = \
+            res_len_monthly[i_start : i_start+length+1] + np.arange(length+1,0,-1)*row.subscription_type
+        
     num_subspt = num_subspt_monthly + num_subspt_annual
+    res_subspt_length = res_len_monthly + res_len_annual
+    # Handel zeros in data
+    num_subspt_monthly = num_subspt_monthly.astype('float')
+    num_subspt_monthly[num_subspt_monthly==0] = np.nan
+    res_len_monthly = res_len_monthly / num_subspt_monthly
+    res_len_annual = res_len_annual / num_subspt_annual
     res_subspt_length = res_subspt_length / num_subspt
     df_subspt_timeseries = pd.DataFrame({'num_subscriptions': num_subspt,
                                     'num_subscriptions_monthly': num_subspt_monthly,
                                     'num_subscriptions_annual': num_subspt_annual,
+                                    'res_subscriptions_length_mon': res_len_monthly,
+                                    'res_subscriptions_length_ann': res_len_annual,
                                     'res_subscriptions_length': res_subspt_length}, index=dates)
 
     # Part-II: COUNT OF CANCELLATIONS, RETURNS, RENEWALS AND NEW-SUBSCRIPTIONS
@@ -168,3 +187,9 @@ def subspt_timeseries(df_subspt, configuration):
         df_subspt_timeseries = _remove_unsteady_data(df_subspt_timeseries)
 
     return df_subspt_timeseries
+
+def subspt_survival(df_subspt, start_date, period_term, period_unit):
+    first_date = df_subspt.subscription_start_date.min()
+    if start_date < first_date:
+        raise IndexError(f'The input start date {start_date} is earlier than the first observed date in the data!')
+    pass

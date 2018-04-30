@@ -31,5 +31,9 @@ class ResearchConfig(Config):
     PLOT_SUBSPT_DIST = "subspt_dist.png"
     PLOT_ACTIVE_SUBSPT = "active_subspt.png"
     
+    PLOT_PERM_UNIT = 'M'
+    PLOT_PERM_COUNT = "performance_count.png"
+    PLOT_PERM_RATIO = "performance_ratio.png"
+    
 class TestConfig(Config):
     pass

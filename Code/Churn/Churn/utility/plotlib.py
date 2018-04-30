@@ -35,6 +35,16 @@ def subspt_dist(df_subspt, configuration):
     plt.tight_layout()
     plt.savefig(fname)
 
+def subspt_dist_cancelled(df_subspt, configuration):
+    
+    cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
+    temp = df_subspt[df_subspt['subscription_end_date'] > cutoff_date]
+    not_cancelled_pupilId = temp['pupilId'].unique()
+
+    df_subspt_cancelled = df_subspt[~df_subspt['pupilId'].isin(not_cancelled_pupilId)]
+
+    subspt_dist(df_subspt_cancelled, configuration)
+
 def active_subspt(df_subspt_timeseries, configuration):
     last_date = df_subspt_timeseries.index.max()
     cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
@@ -57,7 +67,9 @@ def active_subspt(df_subspt_timeseries, configuration):
 
     # Average remaining subscription length
     ax = fig.add_subplot(212)
-    ax.plot(df_subspt_timeseries.index, df_subspt_timeseries.res_subscriptions_length, 'o', markersize=1, alpha=0.5)
+    ax.plot(df_subspt_timeseries.index, df_subspt_timeseries.res_subscriptions_length, label='Total')
+    ax.plot(df_subspt_timeseries.index, df_subspt_timeseries.res_subscriptions_length_mon, '--', label='Monthly')
+    ax.plot(df_subspt_timeseries.index, df_subspt_timeseries.res_subscriptions_length_ann, '--', label='Annual')
     ax.axvspan(cutoff_date, last_date, color='red', alpha=0.2)
     ax.set_xlabel('Date')
     ax.set_ylabel('Days')
@@ -66,7 +78,123 @@ def active_subspt(df_subspt_timeseries, configuration):
     ax.yaxis.label.set_size(12)
     ax.title.set_fontsize(12)
     ax.title.set_fontweight('bold')
+    ax.legend()
 
     fname = configuration.PLOT_FOLDER + configuration.PLOT_ACTIVE_SUBSPT
+    plt.tight_layout()
+    plt.savefig(fname)
+
+def performance_count(df_subspt_timeseries, configuration):
+    ''' Plot of descriptive time series  
+    (1) Cancellations over time
+    (2) Returns over time
+    (3) Renewals over time
+    (4) New Subscriptions overtime
+    '''
+    cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
+    df_agg = df_subspt_timeseries[df_subspt_timeseries.index < cutoff_date].\
+        resample(configuration.PLOT_PERM_UNIT).apply(lambda x: x.values.sum())
+    
+    fig = plt.figure(figsize=(16,6))
+
+    ax = fig.add_subplot(221)
+    ax.plot(df_agg.index, df_agg[['num_ccl_ann', 'num_ccl_mon']].sum(axis=1, skipna=True, min_count=1), label='Total')
+    ax.plot(df_agg.index, df_agg.num_ccl_mon, '--', label='Monthly')
+    ax.plot(df_agg.index, df_agg.num_ccl_ann, '--', label='Annual')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of Cancellations')
+    ax.set_title('Cancellations Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12) 
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+    ax.legend()
+
+    ax = fig.add_subplot(222)
+    ax.plot(df_agg.index, df_agg[['num_rtn_a2a',
+            'num_rtn_a2m', 'num_rtn_m2a', 'num_rtn_m2m']].sum(axis=1, skipna=True, min_count=1))
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of Returns')
+    ax.set_title('Returns Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12)
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+
+    ax = fig.add_subplot(223)
+    ax.plot(df_agg.index, df_agg[['num_rnl_m2m', 'num_rnl_a2a', \
+           'num_rnl_m2a', 'num_rnl_a2m']].sum(axis=1, skipna=True, min_count=1), label='Total')
+    ax.plot(df_agg.index, df_agg[['num_rnl_m2m', 'num_rnl_m2a']].sum(axis=1, skipna=True, min_count=1), '--', label='Monthly')
+    ax.plot(df_agg.index, df_agg[['num_rnl_a2a', 'num_rnl_a2m']].sum(axis=1, skipna=True, min_count=1), '--', label='Annual')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of Renewals')
+    ax.set_title('Renewals Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12)
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+    ax.legend()
+
+    ax = fig.add_subplot(224)
+    ax.plot(df_agg.index, df_agg[['num_new_ann','num_new_mon']].sum(axis=1, skipna=True, min_count=1), label='Total')
+    ax.plot(df_agg.index, df_agg.num_new_mon, '--', label='Monthly')
+    ax.plot(df_agg.index, df_agg.num_new_ann, '--', label='Annual')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of New Subscriptions')
+    ax.set_title('New Subscriptions Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12)
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+    ax.legend()
+
+    fname = configuration.PLOT_FOLDER + configuration.PLOT_PERM_COUNT
+    plt.tight_layout()
+    plt.savefig(fname)
+
+def performance_ratio(df_subspt_timeseries, configuration):
+    ''' Plot of descriptive time series  
+    (1) Retention rate over time
+    (2) New subscription rate over time
+    '''
+    cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
+    df_agg = df_subspt_timeseries[df_subspt_timeseries.index < cutoff_date].\
+        resample(configuration.PLOT_PERM_UNIT).apply(lambda x: x.values.sum())
+
+    fig = plt.figure(figsize=(8,6))
+
+    ax = fig.add_subplot(211)
+    num_rnl_mon = df_agg[['num_rnl_m2a', 'num_rnl_m2m']].sum(axis=1, skipna=True, min_count=1)
+    num_rnl_ann = df_agg[['num_rnl_a2m', 'num_rnl_a2a']].sum(axis=1, skipna=True, min_count=1)
+    num_opt_mon = pd.concat((df_agg.num_ccl_mon, num_rnl_mon), axis=1).sum(axis=1, skipna=True, min_count=1)
+    num_opt_ann = pd.concat((df_agg.num_ccl_ann, num_rnl_ann), axis=1).sum(axis=1, skipna=True, min_count=1)
+    ax.plot(df_agg.index, pd.concat((num_rnl_mon,num_rnl_ann), axis=1).sum(axis=1, skipna=True, min_count=1)/\
+            pd.concat((num_opt_mon,num_opt_ann), axis=1).sum(axis=1, skipna=True, min_count=1), label='Total')
+    ax.plot(df_agg.index, num_rnl_mon/num_opt_mon, '--', label='Monthly')
+    ax.plot(df_agg.index, num_rnl_ann/num_opt_ann, '--', label='Annual')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Retention Rate')
+    ax.set_title('Retention Rate Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12) 
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+    ax.legend()
+
+    ax = fig.add_subplot(212)
+    ax.plot(df_agg.index, df_agg[['num_new_mon','num_new_ann']].sum(axis=1, skipna=True, min_count=1)/\
+            df_agg[['num_subscriptions_monthly','num_subscriptions_annual']].sum(axis=1, skipna=True, min_count=1), label='Total')
+    ax.plot(df_agg.index, df_agg.num_new_mon/df_agg.num_subscriptions_monthly, '--', label='Monthly')
+    ax.plot(df_agg.index, df_agg.num_new_ann/df_agg.num_subscriptions_annual, '--', label='Annual')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('New Subscription Rate')
+    ax.set_title('New Subscription Rate Over Time')
+    ax.xaxis.label.set_size(12)
+    ax.yaxis.label.set_size(12)
+    ax.title.set_fontsize(12)
+    ax.title.set_fontweight('bold')
+    ax.legend()
+
+    fname = configuration.PLOT_FOLDER + configuration.PLOT_PERM_RATIO
     plt.tight_layout()
     plt.savefig(fname)

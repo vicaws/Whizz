@@ -19,7 +19,7 @@ if __name__ == "__main__":
     print("Complete loading data for subscription and lesson history!")
 
     # Distribution of subscription length per pupil
-    utility.plotlib.subspt_dist(df_subspt, cfg)
+    utility.plotlib.subspt_dist_cancelled(df_subspt, cfg)
 
     print("Start preparing the time-series data for subscription.")
     df_subspt_timeseries = utility.df.subspt_timeseries(df_subspt, cfg)
