@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -188,8 +190,53 @@ def subspt_timeseries(df_subspt, configuration):
 
     return df_subspt_timeseries
 
-def subspt_survival(df_subspt, start_date, period_term, period_unit):
+
+def subspt_survival(df_subspt, subscription_type, start_date, period_term, period_unit):
+    
+    # Filter data
+    df_subspt = df_subspt[df_subspt['subscription_type']==subscription_type]
+
     first_date = df_subspt.subscription_start_date.min()
+    last_date = df_subspt.subscription_end_date.max()
+    
+    # Errors
     if start_date < first_date:
-        raise IndexError(f'The input start date {start_date} is earlier than the first observed date in the data!')
-    pass
+        raise IndexError(f'The input start date {start_date} is earlier than the first observed date {first_date} in the data!')
+    elif start_date > last_date:
+        raise IndexError(f'The input start date {start_date} is later than the last observed date {last_date} in the data!')
+
+    end_date = start_date + pd.to_timedelta(period_term, unit=period_unit)
+    if end_date > last_date:
+        raise IndexError(f'The indicated end date {end_date} is later than the last observed date {last_date} in the data!')
+
+    # Warnings
+    if subscription_type == 'Monthly':
+        threshold_date = first_date + pd.to_timedelta(1, unit='M')
+    else:
+        threshold_date = first_date + pd.to_timedelta(1, unit='Y')
+    if start_date < threshold_date:
+        warnings.warn('The input start date is suggested to be at least 1-month or 1-year later than the first observed date in the data!')
+
+    # Identify exisiting subscribers in the first period
+    first_end_date = start_date + pd.to_timedelta(1, unit=period_unit)
+    criterion1 = (df_subspt['subscription_start_date'] <= start_date) & (df_subspt['subscription_end_date'] > start_date)
+    criterion2 = (df_subspt['subscription_start_date'] > start_date) & (df_subspt['subscription_start_date'] < first_end_date)
+    initial_users = df_subspt[criterion1|criterion2]['pupilId'].unique()
+
+    survival_count = np.zeros(period_term)
+    dates = []
+    survival_count[0] = len(initial_users)
+    dates.append(first_end_date)
+
+    # Calculate survivals
+    for iperiod in range(1, period_term):
+        p_start_date = start_date + pd.to_timedelta(iperiod, unit=period_unit)
+        p_end_date = p_start_date + pd.to_timedelta(1, unit=period_unit)
+        criterion1 = (df_subspt['subscription_start_date'] <= p_start_date) & (df_subspt['subscription_end_date'] > p_start_date)
+        criterion2 = (df_subspt['subscription_start_date'] > p_start_date) & (df_subspt['subscription_start_date'] < p_end_date)
+        active_users = df_subspt[criterion1|criterion2]['pupilId'].unique()
+        
+        survival_count[iperiod] = len(np.intersect1d(active_users, initial_users))
+        dates.append(p_end_date)
+
+    return pd.DataFrame({'survival_count': survival_count}, index=dates)

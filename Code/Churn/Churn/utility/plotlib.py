@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 def subspt_dist(df_subspt, configuration):
     fig = plt.figure(figsize=(10,3))
@@ -196,5 +197,52 @@ def performance_ratio(df_subspt_timeseries, configuration):
     ax.legend()
 
     fname = configuration.PLOT_FOLDER + configuration.PLOT_PERM_RATIO
+    plt.tight_layout()
+    plt.savefig(fname)
+
+def survival(survival_counts, configuration):
+    
+    num_trials = survival_counts.shape[0]
+
+    fig = plt.figure(figsize=(12,6))
+
+    ax = fig.add_subplot(221)
+    for i in range(0, num_trials):
+        ax.plot(survival_counts[i,:])
+    ax.set_title('Survival Count')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Number of subscriptions')
+
+    ax = fig.add_subplot(222)
+    for i in range(0, num_trials):
+        ax.plot(survival_counts[i,:]/np.max(survival_counts[i,:]))
+    ax.set_title('Survival rate')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Percent of remaining subscriptions')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+
+    ax = fig.add_subplot(223)
+    ax.plot(np.mean(survival_counts/np.max(survival_counts, axis=1).reshape(num_trials,1), axis=0), '-ko')   
+    survival_count = pd.DataFrame(np.mean(survival_counts/np.max(survival_counts, axis=1).reshape(num_trials,1), axis=0))
+    gmean_survival_rate = stats.gmean(1.0 + np.array(survival_count.pct_change())[1:])
+    survival_theory = np.power(gmean_survival_rate, range(0, survival_counts.shape[1]))
+    ax.plot(survival_theory, '--')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Percent of remaining subscriptions')
+    ax.set_title('Sample-Average Survival Rate')
+
+    ax = fig.add_subplot(224)
+    ax.plot(survival_count.pct_change(), '-ko')
+    ax.axhline(y=gmean_survival_rate-1.0, linestyle='--')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Cancellation Rate')
+    ax.set_title('Sample-Average Cancellation Rate')
+
+    fname = configuration.PLOT_FOLDER + configuration.PLOT_SURVIVAL
     plt.tight_layout()
     plt.savefig(fname)

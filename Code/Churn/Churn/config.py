@@ -34,6 +34,8 @@ class ResearchConfig(Config):
     PLOT_PERM_UNIT = 'M'
     PLOT_PERM_COUNT = "performance_count.png"
     PLOT_PERM_RATIO = "performance_ratio.png"
+
+    PLOT_SURVIVAL = "survival_analysis.png"
     
 class TestConfig(Config):
     pass
