@@ -232,6 +232,7 @@ def survival(survival_counts, configuration):
     ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
     ax.set_xlabel('Time')
     ax.set_ylabel('Percent of remaining subscriptions')
+    ax.set_yscale('log')
     ax.set_title('Sample-Average Survival Rate')
 
     ax = fig.add_subplot(224)

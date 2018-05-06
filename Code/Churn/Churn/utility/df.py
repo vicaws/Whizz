@@ -1,4 +1,5 @@
 import warnings
+import os
 
 import numpy as np
 import pandas as pd
@@ -33,6 +34,50 @@ def _remove_unsteady_data(df_subspt_timeseries):
     print("Due to configuration, data as of unsteady period have been removed!")
 
     return df_subspt_timeseries
+
+def _assign_customer_month(df_subspt, df_lesson, date_field, duration_field, configuration):
+    
+    # Sum time taken within a day
+    df_lesson_usage = pd.DataFrame(df_lesson.groupby(['pupilId', df_lesson[date_field].dt.date])[duration_field].sum(), \
+                                    columns=[duration_field])
+    df_lesson_usage.reset_index(inplace=True)
+
+    # Assign customer month number to the date
+    df_lesson_usage['customer_month'] = 0 # initialisation
+    num_records = df_subspt.shape[0]
+    min_records = round(num_records / 20)
+    i_record = 0
+    for row in df_subspt.itertuples():
+        criterion1 = df_lesson_usage.pupilId == row.pupilId
+        criterion21 = df_lesson_usage[date_field] >= row.subscription_start_date.date()
+        criterion22 = df_lesson_usage[date_field] <= row.subscription_end_date.date()
+    
+        # Need adjustment for inter-type renewal customers: a2m or m2a
+        subspt_types = df_subspt[df_subspt.pupilId==row.pupilId].subscription_type
+        num_months_before = 0
+        num_years_before = 0
+        if subspt_types.unique().shape[0] > 1:
+            if subspt_types.unique()[0] == configuration.TYPE_MONTHLY:
+                num_months_before = subspt_types.value_counts()[configuration.TYPE_MONTHLY]
+            elif subspt_types.unique()[0] == configuration.TYPE_ANNUAL:
+                num_years_before = subspt_types.value_counts()[configuration.TYPE_ANNUAL]
+    
+        if row.subscription_type == configuration.TYPE_MONTHLY:
+            df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = \
+                row.customer_month + 12*num_years_before
+        elif row.subscription_type == configuration.TYPE_ANNUAL:       
+            cmonth = (row.customer_month - num_months_before - 1)*12 + \
+                round((df_lesson_usage[date_field]-row.subscription_start_date.date()).dt.days/30) + 1 + \
+                num_months_before
+            df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = cmonth
+    
+        i_record = i_record + 1
+        if i_record % min_records == 0:
+            print("Complete processing {} / {} records in the subscription table.".format(i_record, num_records))    
+        if i_record == num_records:
+            print("Complete processing all {} records in the subscription table!".format(num_records))
+
+    return df_lesson_usage
 
 def subspt_timeseries(df_subspt, configuration): 
     
@@ -190,7 +235,6 @@ def subspt_timeseries(df_subspt, configuration):
 
     return df_subspt_timeseries
 
-
 def subspt_survival(df_subspt, subscription_type, start_date, period_term, period_unit):
     
     # Filter data
@@ -240,3 +284,71 @@ def subspt_survival(df_subspt, subscription_type, start_date, period_term, perio
         dates.append(p_end_date)
 
     return pd.DataFrame({'survival_count': survival_count}, index=dates)
+
+def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
+    
+    # Pre-process: remove subscribers whose final customer-month number cannot be determined 
+    cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
+    pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > cutoff_date]['pupilId'].unique()
+    print('By the cutoff date {}, there are {} active subscriptions.'.format(cutoff_date.date(), len(pupils_notcancelled)))
+    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions')
+    print('')
+
+    first_date_impFromData = df_subspt.subscription_start_date.min()
+    start_date = first_date_impFromData + pd.to_timedelta(1, 'M')
+    pupils_firstperiod = df_subspt[df_subspt.subscription_start_date < start_date].pupilId.unique()
+    print('In the first month of dataset, there are {} renewal or new subscriptions.'.format(len(pupils_firstperiod)))
+    print('These subscribers shall be removed from the analysis because we have no evidence to show if they renewed or newly joined. \n')
+
+    pupils_toBeRemoved = np.unique(np.concatenate((pupils_firstperiod, pupils_notcancelled), axis=0))
+    print('In summary, there are {} / {} subscribers are removed from the dataset in the analysis. \n'.\
+        format(len(pupils_toBeRemoved), df_subspt.pupilId.unique().shape[0]))
+
+    df_lesson1 = df_lesson[~df_lesson.pupilId.isin(pupils_toBeRemoved)]
+    df_incomp1 = df_incomp[~df_incomp.pupilId.isin(pupils_toBeRemoved)]
+    df_subspt1 = df_subspt[~df_subspt.pupilId.isin(pupils_toBeRemoved)]
+    
+    # Define (vaguely) customer-month number in df_subspt table
+    warnings.filterwarnings("ignore")
+    df_subspt1['customer_month'] = df_subspt1.groupby('pupilId')['subscription_start_date'].rank()
+
+    # Assign customer-month number to other tables
+    print('Start assigning customer month for complete lesson table.')
+    df_lesson_usage = _assign_customer_month(df_subspt1, df_lesson1, 'marked', 'timeTaken', configuration)
+    print('\nStart assigning customer month for incomplete lesson table.')
+    df_incomp_usage = _assign_customer_month(df_subspt1, df_incomp1, 'created', 'time_taken', configuration)
+
+    # Concatenate two usage tables
+    df_lesson_usage.rename(columns={'marked':'date', 'timeTaken':'time_taken_complete'}, inplace=True)
+    df_incomp_usage.rename(columns={'created':'date', 'time_taken':'time_taken_incomplete'}, inplace=True)
+    df_lesson_usage.set_index(['pupilId', 'date'], inplace=True)
+    df_incomp_usage.set_index(['pupilId', 'date'], inplace=True)
+
+    df_usage = pd.concat([df_lesson_usage, df_incomp_usage], axis=1)
+    df_usage = df_usage.groupby(df_usage.columns, axis=1).agg(np.max) # there are 2 customer_month columns, merge them into 1
+    df_usage.replace(np.nan, 0.0, inplace=True) # replace nan cells of time taken by 0
+
+    df_usage = df_usage[df_usage.customer_month!=0] # remove data points beyond customer-month of interest
+
+    # Save into CSV file
+    fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
+    fname = fpath + configuration.DATA_USAGE
+
+    if not os.path.exists(fpath):
+        os.makedirs(fpath)
+    df_usage.reset_index().to_csv(fname)
+
+    return df_usage
+
+def _load_customer_usage(configuration):
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
+    df_usage = pd.read_csv(fname, delimiter=',')
+
+    return df_usage
+
+def customer_usage(df_subspt, df_lesson, df_incomp, configuration):
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
+    if os.path.isfile(fname):
+        return _load_customer_usage(configuration)
+    else:
+        return _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration)

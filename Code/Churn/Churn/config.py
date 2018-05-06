@@ -20,14 +20,17 @@ class Config:
 class ResearchConfig(Config):
     
     FILE_SUBFOLDER = "20180426/"
-    
+    FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
+
     CUTOFF_DATE = "2018-04-20"
     RETURN_GAP = 5
     RETURN_GAP_UNIT = 'D'
 
-    IGNORE_UNSTEADY_PERIOD = True
+    IGNORE_UNSTEADY_PERIOD = False
 
     # Output
+    DATA_USAGE = "usage.csv"
+
     PLOT_SUBSPT_DIST = "subspt_dist.png"
     PLOT_ACTIVE_SUBSPT = "active_subspt.png"
     
