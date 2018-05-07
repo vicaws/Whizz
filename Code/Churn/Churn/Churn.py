@@ -19,7 +19,7 @@ if __name__ == "__main__":
     print("Complete loading data for subscription and lesson history!")
     print("")
 
-    utility.df.generate_customer_usage(df_subspt, df_lesson, df_incomp, cfg)
+    utility.df.customer_usage(df_subspt, df_lesson, df_incomp, cfg)
 
 
     #start_date = pd.to_datetime('2016-02-01')

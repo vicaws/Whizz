@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 def _remove_unsteady_data(df_subspt_timeseries):
 
@@ -45,41 +46,24 @@ def _assign_customer_month(df_subspt, df_lesson, date_field, duration_field, con
     # Assign customer month number to the date
     df_lesson_usage['customer_month'] = 0 # initialisation
     num_records = df_subspt.shape[0]
-    min_records = round(num_records / 20)
-    i_record = 0
-    for row in df_subspt.itertuples():
+    warnings.filterwarnings('ignore')
+    for i_record, row in zip(tqdm(range(num_records)), df_subspt.itertuples()):
         criterion1 = df_lesson_usage.pupilId == row.pupilId
         criterion21 = df_lesson_usage[date_field] >= row.subscription_start_date.date()
         criterion22 = df_lesson_usage[date_field] <= row.subscription_end_date.date()
-    
-        # Need adjustment for inter-type renewal customers: a2m or m2a
-        subspt_types = df_subspt[df_subspt.pupilId==row.pupilId].subscription_type
-        num_months_before = 0
-        num_years_before = 0
-        if subspt_types.unique().shape[0] > 1:
-            if subspt_types.unique()[0] == configuration.TYPE_MONTHLY:
-                num_months_before = subspt_types.value_counts()[configuration.TYPE_MONTHLY]
-            elif subspt_types.unique()[0] == configuration.TYPE_ANNUAL:
-                num_years_before = subspt_types.value_counts()[configuration.TYPE_ANNUAL]
-    
+        
         if row.subscription_type == configuration.TYPE_MONTHLY:
             df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = \
-                row.customer_month + 12*num_years_before
+                row.customer_month
         elif row.subscription_type == configuration.TYPE_ANNUAL:       
-            cmonth = (row.customer_month - num_months_before - 1)*12 + \
-                round((df_lesson_usage[date_field]-row.subscription_start_date.date()).dt.days/30) + 1 + \
-                num_months_before
+            cmonth = row.customer_month - 12 + \
+                np.ceil((df_lesson_usage[date_field]-row.subscription_start_date.date()).dt.days/30)
             df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = cmonth
+    warnings.filterwarnings('default')
     
-        i_record = i_record + 1
-        if i_record % min_records == 0:
-            print("Complete processing {} / {} records in the subscription table.".format(i_record, num_records))    
-        if i_record == num_records:
-            print("Complete processing all {} records in the subscription table!".format(num_records))
-
     return df_lesson_usage
 
-def subspt_timeseries(df_subspt, configuration): 
+def _generate_subspt_timeseries(df_subspt, configuration): 
     
     # Identify the dates range for study
     last_date = df_subspt.subscription_end_date.max()
@@ -96,7 +80,9 @@ def subspt_timeseries(df_subspt, configuration):
     res_subspt_length = np.zeros(len(dates))    # average residual length of active subscriptions
     
     temp = df_subspt.groupby(['subscription_start_date', 'subscription_length']).count()
-    for row in temp.itertuples(index=True):
+    print("Prepare data for active subscriptions.")
+    warnings.filterwarnings('ignore')
+    for irow, row in zip(tqdm(range(temp.shape[0])), temp.itertuples(index=True)):
         start_date, length = row.Index
         i_start = dates.index(start_date)
         
@@ -147,8 +133,9 @@ def subspt_timeseries(df_subspt, configuration):
 
     return_gap = pd.to_timedelta(configuration.RETURN_GAP, unit=configuration.RETURN_GAP_UNIT)
 
+    print("Prepare data for counts of cancellations, returns, renewals and new subscriptions.")
     pupil_list = df_subspt.pupilId.unique()
-    for pupil in pupil_list:
+    for pupil in tqdm(pupil_list):
         df_pupil = df_subspt[df_subspt.pupilId==pupil]
     
         # Sort by subscription start date
@@ -233,7 +220,35 @@ def subspt_timeseries(df_subspt, configuration):
     if configuration.IGNORE_UNSTEADY_PERIOD:
         df_subspt_timeseries = _remove_unsteady_data(df_subspt_timeseries)
 
+    # Save into CSV file
+    fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
+    fname = fpath + configuration.DATA_DESCR
+
+    if not os.path.exists(fpath):
+        os.makedirs(fpath)
+    df_subspt_timeseries.to_csv(fname, index=True) 
+
+    warnings.filterwarnings('default')
     return df_subspt_timeseries
+
+def _load_subspt_timeseries(configuration):
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DESCR
+    df_subspt_timeseries = pd.read_csv(fname, delimiter=',', index_col=0)
+    
+    time_format = configuration.CSV_TIME_FORMAT
+    date_format = configuration.CSV_DATE_FORMAT
+    df_subspt_timeseries.index = pd.to_datetime(df_subspt_timeseries.index, format=date_format+" "+time_format)
+
+    print('The descriptive stats have already been computed and saved in a file. The file has been loaded!')
+
+    return df_subspt_timeseries
+
+def subspt_timeseries(df_subspt, configuration):
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DESCR
+    if os.path.isfile(fname):
+        return _load_subspt_timeseries(configuration)
+    else:
+        return _generate_subspt_timeseries(df_subspt, configuration)
 
 def subspt_survival(df_subspt, subscription_type, start_date, period_term, period_unit):
     
@@ -291,8 +306,7 @@ def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
     cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
     pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > cutoff_date]['pupilId'].unique()
     print('By the cutoff date {}, there are {} active subscriptions.'.format(cutoff_date.date(), len(pupils_notcancelled)))
-    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions')
-    print('')
+    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions. \n')
 
     first_date_impFromData = df_subspt.subscription_start_date.min()
     start_date = first_date_impFromData + pd.to_timedelta(1, 'M')
@@ -301,16 +315,32 @@ def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
     print('These subscribers shall be removed from the analysis because we have no evidence to show if they renewed or newly joined. \n')
 
     pupils_toBeRemoved = np.unique(np.concatenate((pupils_firstperiod, pupils_notcancelled), axis=0))
-    print('In summary, there are {} / {} subscribers are removed from the dataset in the analysis. \n'.\
+    print('In summary, there are {}/{} subscribers being removed from the dataset in the analysis. \n'.\
         format(len(pupils_toBeRemoved), df_subspt.pupilId.unique().shape[0]))
 
     df_lesson1 = df_lesson[~df_lesson.pupilId.isin(pupils_toBeRemoved)]
     df_incomp1 = df_incomp[~df_incomp.pupilId.isin(pupils_toBeRemoved)]
     df_subspt1 = df_subspt[~df_subspt.pupilId.isin(pupils_toBeRemoved)]
     
-    # Define (vaguely) customer-month number in df_subspt table
-    warnings.filterwarnings("ignore")
-    df_subspt1['customer_month'] = df_subspt1.groupby('pupilId')['subscription_start_date'].rank()
+    # Define customer-month number in df_subspt table
+    print("Calculate customer month in the subscription table.")
+    warnings.filterwarnings("ignore") # it is known that a warning message will appear here. However, we can safely hide it.
+    df_subspt1['num_months'] = 1
+    df_subspt1.loc[df_subspt1['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
+    
+    df_subspt1['customer_month'] = 0
+    def calc_customer_month(df_pupil):
+        # Sort the date in ascending order
+        df_pupil.sort_values('subscription_start_date', inplace=True)  
+    
+        df_pupil['customer_month'] = df_pupil['num_months'].cumsum()
+    
+        return df_pupil
+    g = df_subspt1.groupby('pupilId')
+    
+    tqdm.pandas()
+    df_subspt1 = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
+    warnings.filterwarnings('default')
 
     # Assign customer-month number to other tables
     print('Start assigning customer month for complete lesson table.')
@@ -336,13 +366,14 @@ def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
 
     if not os.path.exists(fpath):
         os.makedirs(fpath)
-    df_usage.reset_index().to_csv(fname)
+    df_usage.reset_index().to_csv(fname, index=False)
 
     return df_usage
 
 def _load_customer_usage(configuration):
     fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
     df_usage = pd.read_csv(fname, delimiter=',')
+    print('The usage has already been computed and saved in a file. The file has been loaded!')
 
     return df_usage
 

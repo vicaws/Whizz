@@ -17,18 +17,20 @@ class Config:
     # Output
     PLOT_FOLDER = "../../../Result/Plot/"
 
-class ResearchConfig(Config):
-    
-    FILE_SUBFOLDER = "20180426/"
+class ResearchConfig(Config):  
+    # Data
+    FILE_SUBFOLDER = "20180503/"
     FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
 
+    # Study
     CUTOFF_DATE = "2018-04-20"
     RETURN_GAP = 5
     RETURN_GAP_UNIT = 'D'
 
-    IGNORE_UNSTEADY_PERIOD = False
+    IGNORE_UNSTEADY_PERIOD = True
 
     # Output
+    DATA_DESCR = "descriptive_stats.csv"
     DATA_USAGE = "usage.csv"
 
     PLOT_SUBSPT_DIST = "subspt_dist.png"
