@@ -247,3 +247,28 @@ def survival(survival_counts, configuration):
     fname = configuration.PLOT_FOLDER + configuration.PLOT_SURVIVAL
     plt.tight_layout()
     plt.savefig(fname)
+
+def survival_customer_month(df_subspt, configuration):
+    survival_population = df_subspt.groupby('customer_month')['pupilId'].count()
+    
+    fig = plt.figure(figsize=(12,3))
+
+    ax = fig.add_subplot(121)
+    gmean_survival_rate =  (survival_population.values[-1] / survival_population.values[0])**\
+        (1.0 / (survival_population.shape[0]-1))
+    survival_theory = np.power(gmean_survival_rate, range(0, survival_population.shape[0])) * survival_population.values[0]
+    ax.plot(survival_population, '-ko')
+    ax.plot(survival_population.index, survival_theory, '--')
+    ax.set_title('Population Survival Count')
+    ax.set_xlabel('Customer Month')
+    ax.set_ylabel('Number of subscribers')
+    ax.set_yscale('log')
+
+    ax = fig.add_subplot(122)
+    ax.plot(survival_population.pct_change(), '-ko')
+    ax.axhline(y=gmean_survival_rate-1.0, linestyle='--')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+    ax.set_xlabel('Customer Month')
+    ax.set_ylabel('Cancellation Rate')
+    ax.set_title('Population Cancellation Rate')

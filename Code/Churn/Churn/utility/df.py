@@ -36,6 +36,53 @@ def _remove_unsteady_data(df_subspt_timeseries):
 
     return df_subspt_timeseries
 
+def filter_subspt_data(df_subspt, start_date, end_date, remove_annual_subspt):
+    # remove customers who have not already cancelled
+    pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > end_date]['pupilId'].unique()
+    print('By the cutoff date {}, there are {} active subscriptions.'.format(end_date.date(), len(pupils_notcancelled)))
+    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions. \n')
+
+    # remove existing customer in the front month 
+    start_date1 = start_date + pd.to_timedelta(1, 'M')
+    pupils_firstperiod = df_subspt[df_subspt['subscription_start_date'] < start_date1].pupilId.unique()
+    print('In the first month of dataset starting from {}, there are {} renewal or new subscriptions.'.format(start_date.date(), len(pupils_firstperiod)))
+    print('These subscribers shall be removed from the analysis because we have no evidence to show if they renewed or newly joined. \n')
+
+    # remove annual subscrobers
+    pupils_annual = []
+    if remove_annual_subspt:
+        pupils_annual = df_subspt[df_subspt['subscription_type']=='Annual']['pupilId'].unique()
+        print('We also choose to remove {} annual subscribers. \n'.format(len(pupils_annual)))
+    
+    # aggregate
+    pupils_toBeRemoved = np.unique(np.concatenate((pupils_notcancelled, pupils_annual, pupils_firstperiod), axis=0))
+    print('In summary, there are {}/{} subscribers being removed from the dataset in the analysis. \n'.\
+        format(len(pupils_toBeRemoved), df_subspt.pupilId.unique().shape[0]))
+    
+    return pupils_toBeRemoved
+
+def compute_customer_month(df_subspt, configuration):
+    print("Calculate customer month in the subscription table.")
+    warnings.filterwarnings("ignore") # it is known that a warning message will appear here. However, we can safely hide it.
+    df_subspt['num_months'] = 1
+    df_subspt.loc[df_subspt['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
+    
+    df_subspt['customer_month'] = 0
+    def calc_customer_month(df_pupil):
+        # Sort the date in ascending order
+        df_pupil.sort_values('subscription_start_date', inplace=True)  
+    
+        df_pupil['customer_month'] = df_pupil['num_months'].cumsum()
+    
+        return df_pupil
+    g = df_subspt.groupby('pupilId')
+    
+    tqdm.pandas()
+    df_subspt = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
+    warnings.filterwarnings('default')
+    
+    return df_subspt
+
 def _assign_customer_month(df_subspt, df_lesson, date_field, duration_field, configuration):
     
     # Sum time taken within a day
@@ -302,45 +349,17 @@ def subspt_survival(df_subspt, subscription_type, start_date, period_term, perio
 
 def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
     
-    # Pre-process: remove subscribers whose final customer-month number cannot be determined 
+    ## Pre-process: remove subscribers whose final customer-month number cannot be determined 
     cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
-    pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > cutoff_date]['pupilId'].unique()
-    print('By the cutoff date {}, there are {} active subscriptions.'.format(cutoff_date.date(), len(pupils_notcancelled)))
-    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions. \n')
-
     first_date_impFromData = df_subspt.subscription_start_date.min()
-    start_date = first_date_impFromData + pd.to_timedelta(1, 'M')
-    pupils_firstperiod = df_subspt[df_subspt.subscription_start_date < start_date].pupilId.unique()
-    print('In the first month of dataset, there are {} renewal or new subscriptions.'.format(len(pupils_firstperiod)))
-    print('These subscribers shall be removed from the analysis because we have no evidence to show if they renewed or newly joined. \n')
-
-    pupils_toBeRemoved = np.unique(np.concatenate((pupils_firstperiod, pupils_notcancelled), axis=0))
-    print('In summary, there are {}/{} subscribers being removed from the dataset in the analysis. \n'.\
-        format(len(pupils_toBeRemoved), df_subspt.pupilId.unique().shape[0]))
+    pupils_toBeRemoved = filter_subspt_data(df_subspt, first_date_impFromData, cutoff_date, remove_annual_subspt=False)
 
     df_lesson1 = df_lesson[~df_lesson.pupilId.isin(pupils_toBeRemoved)]
     df_incomp1 = df_incomp[~df_incomp.pupilId.isin(pupils_toBeRemoved)]
     df_subspt1 = df_subspt[~df_subspt.pupilId.isin(pupils_toBeRemoved)]
     
     # Define customer-month number in df_subspt table
-    print("Calculate customer month in the subscription table.")
-    warnings.filterwarnings("ignore") # it is known that a warning message will appear here. However, we can safely hide it.
-    df_subspt1['num_months'] = 1
-    df_subspt1.loc[df_subspt1['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
-    
-    df_subspt1['customer_month'] = 0
-    def calc_customer_month(df_pupil):
-        # Sort the date in ascending order
-        df_pupil.sort_values('subscription_start_date', inplace=True)  
-    
-        df_pupil['customer_month'] = df_pupil['num_months'].cumsum()
-    
-        return df_pupil
-    g = df_subspt1.groupby('pupilId')
-    
-    tqdm.pandas()
-    df_subspt1 = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
-    warnings.filterwarnings('default')
+    df_subspt1 = compute_customer_month(df_subspt1, configuration)
 
     # Assign customer-month number to other tables
     print('Start assigning customer month for complete lesson table.')
