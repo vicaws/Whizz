@@ -8,6 +8,7 @@ class Config:
     FILE_LH_COMPLETE = "homesubs_lh.csv"
     FILE_LH_INCOMPLETE = "homesubs_incomplete_lh.csv"
     FILE_CURRICULUM = "curriculum_number_of_lessons.csv"
+    FILE_PUPILS = "pupils.csv"
     
     TYPE_MONTHLY = "Monthly"
     TYPE_ANNUAL = "Annual"
@@ -31,6 +32,7 @@ class ResearchConfig(Config):
 
     # Output
     DATA_DESCR = "descriptive_stats.csv"
+    DATA_DATES = "dates_frame.csv"
     DATA_USAGE = "usage.csv"
 
     PLOT_SUBSPT_DIST = "subspt_dist.png"
@@ -41,6 +43,7 @@ class ResearchConfig(Config):
     PLOT_PERM_RATIO = "performance_ratio.png"
 
     PLOT_SURVIVAL = "survival_analysis.png"
+    PLOT_SURVIVAL_CM = "survival_analysis_CM.png"
     
 class TestConfig(Config):
     pass

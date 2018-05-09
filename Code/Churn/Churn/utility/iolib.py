@@ -22,11 +22,13 @@ def retrieve_data(configuration):
     fname_incomp = fpath + fpathchar + configuration.FILE_LH_INCOMPLETE
     fname_crclum = fpath + fpathchar + configuration.FILE_CURRICULUM
     fname_subspt = fpath + fpathchar + configuration.FILE_SUBSCRIPTION
+    fname_pupils = fpath + fpathchar + configuration.FILE_PUPILS
 
     df_lesson = pd.read_csv(fname_lesson, delimiter=',')
     df_incomp = pd.read_csv(fname_incomp, delimiter=',')
     df_crclum = pd.read_csv(fname_crclum, delimiter=',')
     df_subspt = pd.read_csv(fname_subspt, delimiter=',')
+    df_pupils = pd.read_csv(fname_pupils, delimiter=',')
 
     time_format = configuration.CSV_TIME_FORMAT
     date_format = configuration.CSV_DATE_FORMAT
@@ -71,4 +73,8 @@ def retrieve_data(configuration):
     # NOTE: in the topicId field, "NA" entries will be read as nan type, need to convert back to string type
     df_crclum['topicId'] = df_crclum['topicId'].fillna('NA')
 
-    return df_subspt, df_lesson, df_incomp, df_crclum
+    ## Pre-process fname_pupils
+    df_pupils['dob'] = pd.to_datetime(df_pupils['dob']).dt.date
+    df_pupils.set_index(['pupilId'], inplace=True)
+
+    return df_subspt, df_lesson, df_incomp, df_crclum, df_pupils

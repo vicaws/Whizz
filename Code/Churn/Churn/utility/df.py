@@ -61,6 +61,98 @@ def filter_subspt_data(df_subspt, start_date, end_date, remove_annual_subspt):
     
     return pupils_toBeRemoved
 
+def construct_dates_frame(df_lesson, df_incomp):
+    '''Construct the common dates frame from all dates available in both complete 
+    and incomplete lesson history tables. The date frame also contains the number
+    of records within a day in each of the lesson history tables.
+
+    Parameters
+    ----------
+    df_lesson: pandas.DataFrame
+        Complete lesson history table.
+
+    df_incomp: pandas.DataFrame
+        Incomplete lesson history table.
+
+    Returns
+    -------
+    df_datesFrame: pandas.DataFrame
+        Dates frame that contain all dates available in both complete and incomplete
+        lesson history tables.
+        Index level 0 = pupilId;
+        Index level 1 = date.
+    '''
+    
+    df_lesson.rename(columns={'marked':'date'}, inplace=True)
+    df_lesson['date'] = pd.to_datetime(df_lesson['date'].dt.date.values) # keep only date, remove time
+    dates_lesson = df_lesson.groupby(['pupilId', df_lesson['date']])['pupilId'].count()
+    dates_lesson.rename('count_complete', inplace=True)
+
+    df_incomp.rename(columns={'created':'date'}, inplace=True)
+    df_incomp['date'] = pd.to_datetime(df_incomp['date'].dt.date.values) # keep only date, remove time
+    dates_incomp = df_incomp.groupby(['pupilId', df_incomp['date']])['pupilId'].count()
+    dates_incomp.rename('count_incomplete', inplace=True)
+
+    df_datesFrame = pd.concat([pd.DataFrame(dates_lesson), pd.DataFrame(dates_incomp)], axis=1)
+    df_datesFrame.fillna(0, inplace=True)
+    
+    return df_datesFrame
+
+def assign_customer_month(df_subspt, df_datesFrame, configuration):
+    '''Assign customer month to each date in the common dates frame.
+
+    Parameters
+    ----------
+    df_subspt: pandas.DataFrame
+        Subscription table. The customer month shall have already been computed
+        and assigned to each subscription record.
+
+    df_datesFrame: pandas.DataFrame
+        Dates frame that contain all dates available in both complete and incomplete
+        lesson history tables.
+        Index level 0 = pupilId;
+        Index level 1 = date.
+
+    configuration: Config object
+        Configuration settings.
+
+    Returns
+    -------
+    df_datesFrame: pandas.DataFrame
+        Updated dates frame that includes an additional column of customer month.
+    '''
+    
+    df_datesFrame.reset_index(inplace=True) # remove the index hierarchy for the following calculation
+    df_datesFrame['customer_month'] = 0     # initialisation
+    num_records = df_subspt.shape[0]
+
+    warnings.filterwarnings('ignore')
+    for i_record, row in zip(tqdm(range(num_records)), df_subspt.itertuples()):
+        criterion1 = df_datesFrame.pupilId == row.pupilId
+        criterion21 = df_datesFrame.date >= row.subscription_start_date
+        criterion22 = df_datesFrame.date <= row.subscription_end_date
+        
+        if row.subscription_type == configuration.TYPE_MONTHLY:
+            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = \
+                    row.customer_month
+        elif row.subscription_type == configuration.TYPE_ANNUAL:       
+            cmonth = row.customer_month - 12 + \
+                    np.ceil(( df_datesFrame.date-row.subscription_start_date).dt.days/30)
+            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = cmonth
+    warnings.filterwarnings('default')
+
+    df_datesFrame.set_index(['pupilId', 'date']) # recover the index hierarchy
+
+    # Save into CSV file
+    fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
+    fname = fpath + configuration.DATA_DATES
+
+    if not os.path.exists(fpath):
+        os.makedirs(fpath)
+    df_datesFrame.reset_index().to_csv(fname, index=False)
+
+    return df_datesFrame
+
 def compute_customer_month(df_subspt, configuration):
     print("Calculate customer month in the subscription table.")
     warnings.filterwarnings("ignore") # it is known that a warning message will appear here. However, we can safely hide it.
@@ -84,6 +176,16 @@ def compute_customer_month(df_subspt, configuration):
     return df_subspt
 
 def _assign_customer_month(df_subspt, df_lesson, date_field, duration_field, configuration):
+    '''Assign customer month to each daily record in lesson datafame (complete or incomplete).
+    
+    Parameters
+    ----------
+    df_subspt: pandas.DataFrame
+        Subscription table. The customer month shall have already been computed
+        and assigned to each subscription record.
+
+    df_lesson: pandas.DataFrame
+    '''
     
     # Sum time taken within a day
     df_lesson_usage = pd.DataFrame(df_lesson.groupby(['pupilId', df_lesson[date_field].dt.date])[duration_field].sum(), \

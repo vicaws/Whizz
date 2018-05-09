@@ -272,3 +272,7 @@ def survival_customer_month(df_subspt, configuration):
     ax.set_xlabel('Customer Month')
     ax.set_ylabel('Cancellation Rate')
     ax.set_title('Population Cancellation Rate')
+
+    fname = configuration.PLOT_FOLDER + configuration.PLOT_SURVIVAL_CM
+    plt.tight_layout()
+    plt.savefig(fname)
