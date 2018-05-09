@@ -392,6 +392,11 @@ def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
 def _load_customer_usage(configuration):
     fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
     df_usage = pd.read_csv(fname, delimiter=',')
+    
+    time_format = configuration.CSV_TIME_FORMAT
+    date_format = configuration.CSV_DATE_FORMAT
+    df_usage['date'] = pd.to_datetime(df_usage['date'], format=date_format+" "+time_format)
+    
     print('The usage has already been computed and saved in a file. The file has been loaded!')
 
     return df_usage
