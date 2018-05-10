@@ -94,7 +94,7 @@ def retrieve_data(configuration):
     df_crclum['topicId'] = df_crclum['topicId'].fillna('NA')
 
     ## Pre-process fname_pupils
-    df_pupils['dob'] = pd.to_datetime(df_pupils['dob']).dt.date
+    df_pupils['dob'] = pd.to_datetime(df_pupils['dob'], format=date_format)
     df_pupils.set_index(['pupilId'], inplace=True)
 
     warnings.filterwarnings('default')

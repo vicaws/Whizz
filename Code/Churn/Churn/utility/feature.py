@@ -15,13 +15,17 @@ class Feature(object):
     -------
     add_usageTime:
         Add usage time to features data frame. 2 columns are added:
-        (1) time_taken_complete
-        (2) time_taken_incomplete
+        (1) time_taken_complete;
+        (2) time_taken_incomplete.
 
     add_progressions:
         Add progressions to features data frame. 2 columns are added:
-        (1) progressions - max progression during the day
-        (2) progressions_delta - progression change during the day
+        (1) progressions - max progression during the day;
+        (2) progressions_delta - progression change during the day.
+
+    add_age:
+        Add pupils' age to features data frame. 1 column is added:
+        (1) age - precise float representation where rounding may be necessary.
     """
 
     def __init__(self, df_features):
@@ -47,7 +51,7 @@ class Feature(object):
         # Fill NaN
         df_features1.replace(np.nan, 0.0, inplace=True)
         
-        print('Add feature: usage time.')
+        print('+ Add feature: usage time.')
         self.df_features_ = df_features1
 
     def add_progressions(self, df_lesson):
@@ -85,5 +89,21 @@ class Feature(object):
         # Fill NaN for 'progressions_delta' field
         df_features1['progressions_delta'].fillna(0, inplace=True)
 
-        print('Add feature: progressions.')
+        print('+ Add feature: progressions.')
         self.df_features_ = df_features1
+
+    def add_age(self, df_pupils):
+        '''Add pupils' age to features data frame.
+        '''
+
+        map_dob = dict(zip(df_pupils.index.values, df_pupils['dob'].values))
+
+        df_features = self.df_features_
+        df_features['age'] = 1.0
+        def calc_age(df):
+            dob = map_dob[df.name]
+            df['age'] = (df.index.get_level_values(level=1) - dob).days / 365.25
+            return df
+
+        print('+ Add feature: pupils\' age.')
+        self.df_features_ = df_features.groupby(level=0).apply(calc_age)
