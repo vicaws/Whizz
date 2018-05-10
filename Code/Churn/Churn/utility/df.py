@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+#region Utility Functions
+
 def _remove_unsteady_data(df_subspt_timeseries):
     '''Replace values by numpy.NaN for unsteady period in the subscription descriptive time series
     data. Unstead period refers to the first month for monthly subscription data, or the first year
@@ -51,6 +53,10 @@ def _remove_unsteady_data(df_subspt_timeseries):
 
     return df_subspt_timeseries
 
+#endregion
+
+#region Subscription Pre-process
+
 def filter_subspt_data(df_subspt, start_date, end_date, remove_annual_subspt):
     '''Filter the subsciption table data by given start and end dates of study.
 
@@ -74,31 +80,85 @@ def filter_subspt_data(df_subspt, start_date, end_date, remove_annual_subspt):
         1D array of pupils' ID. 
     '''
     # remove customers who have not already cancelled
-    pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > end_date]['pupilId'].unique()
-    print('By the cutoff date {}, there are {} active subscriptions.'.format(end_date.date(), len(pupils_notcancelled)))
-    print('These subscribers shall be removed from the analysis because we have no evidence to know the lifetime of their subscriptions. \n')
+    pupils_notcancelled = df_subspt[df_subspt['subscription_end_date']>end_date]\
+        ['pupilId'].unique()
+    print('By the cutoff date {}, there are {} active subscriptions.'.\
+        format(end_date.date(), len(pupils_notcancelled)))
+    print('These subscribers shall be removed from the analysis because we have '
+          'no evidence to know the lifetime of their subscriptions. \n')
 
     # remove existing customer in the front month 
     start_date1 = start_date + pd.to_timedelta(1, 'M')
-    pupils_firstperiod = df_subspt[df_subspt['subscription_start_date'] < start_date1].pupilId.unique()
-    print('In the first month of dataset starting from {}, there are {} renewal or new subscriptions.'.format(start_date.date(), len(pupils_firstperiod)))
-    print('These subscribers shall be removed from the analysis because we have no evidence to show if they renewed or newly joined. \n')
+    pupils_firstperiod = df_subspt[df_subspt['subscription_start_date']<start_date1]\
+        .pupilId.unique()
+    print('In the first month of dataset starting from {}, there are {} renewal '
+          'or new subscriptions.'.format(start_date.date(), len(pupils_firstperiod)))
+    print('These subscribers shall be removed from the analysis because we have '
+          'no evidence to show if they renewed or newly joined. \n')
 
     # remove annual subscrobers
     pupils_annual = []
     if remove_annual_subspt:
-        pupils_annual = df_subspt[df_subspt['subscription_type']=='Annual']['pupilId'].unique()
-        print('We also choose to remove {} annual subscribers. \n'.format(len(pupils_annual)))
+        pupils_annual = df_subspt[df_subspt['subscription_type']=='Annual']\
+            ['pupilId'].unique()
+        print('We also choose to remove {} annual subscribers. \n'.\
+            format(len(pupils_annual)))
     
     # aggregate
-    pupils_toBeRemoved = np.unique(np.concatenate((pupils_notcancelled, pupils_annual, pupils_firstperiod), axis=0))
-    print('In summary, there are {}/{} subscribers being removed from the dataset in the analysis. \n'.\
+    pupils_toBeRemoved = np.unique(np.concatenate((pupils_notcancelled, \
+        pupils_annual, pupils_firstperiod), axis=0))
+    print('In summary, there are {}/{} subscribers being removed from the '
+          'dataset in the analysis. \n'.\
         format(len(pupils_toBeRemoved), df_subspt.pupilId.unique().shape[0]))
     
     return pupils_toBeRemoved
 
-def construct_dates_frame(df_lesson, df_incomp):
-    '''Construct the common dates frame from all dates available in both complete 
+def compute_customer_month(df_subspt, configuration):
+    '''Compute customer month for each subscription record.
+
+    Parameters
+    ----------
+    df_subspt: pandas.DataFrame
+        Subscription table.
+
+    configuration: Config object
+        Configuration settings.
+
+    Returns
+    -------
+    df_subspt: pandas.DataFrame
+        Updated subscription table which includes a new column of assigned
+        customer month.
+    '''
+    
+    print("Calculate customer month in the subscription table.")
+    warnings.filterwarnings("ignore") # it is known that a warning message will 
+                                      # appear here. But we can safely hide it.
+    df_subspt['num_months'] = 1
+    df_subspt.loc[df_subspt['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
+    
+    df_subspt['customer_month'] = 0
+    def calc_customer_month(df_pupil):
+        # Sort the date in ascending order
+        df_pupil.sort_values('subscription_start_date', inplace=True)  
+    
+        df_pupil['customer_month'] = df_pupil['num_months'].cumsum()
+    
+        return df_pupil
+    g = df_subspt.groupby('pupilId')
+    
+    tqdm.pandas()
+    df_subspt = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
+    warnings.filterwarnings('default')
+    
+    return df_subspt
+
+#endregion
+
+#region Dates Frame
+
+def _combine_dates_frame(df_lesson, df_incomp):
+    '''Construct the union dates frame from all dates available in both complete 
     and incomplete lesson history tables. The date frame also contains the number
     of records within a day in each of the lesson history tables.
 
@@ -113,44 +173,30 @@ def construct_dates_frame(df_lesson, df_incomp):
     Returns
     -------
     df_datesFrame: pandas.DataFrame
-        Dates frame that contain all dates available in both complete and incomplete
-        lesson history tables.
+        Dates frame that contain all dates available in both complete and 
+        incomplete lesson history tables.
         Index level 0 = pupilId;
         Index level 1 = date.
     '''
-    warnings.filterwarnings('ignore')
-    df_lesson.rename(columns={'marked':'date'}, inplace=True)
-    df_lesson['date'] = pd.to_datetime(df_lesson['date'].dt.date.values) # keep only date, remove time
-    dates_lesson = df_lesson.groupby(['pupilId', df_lesson['date']])['pupilId'].count()
+    
+    # Find out all dates in the complete lesson table    
+    dates_lesson = df_lesson.groupby(['pupilId', df_lesson['date']])['pupilId'].\
+        count()
     dates_lesson.rename('count_complete', inplace=True)
 
-    df_incomp.rename(columns={'created':'date'}, inplace=True)
-    df_incomp['date'] = pd.to_datetime(df_incomp['date'].dt.date.values) # keep only date, remove time
-    dates_incomp = df_incomp.groupby(['pupilId', df_incomp['date']])['pupilId'].count()
+    # Find out all dates in the incomplete lesson table
+    dates_incomp = df_incomp.groupby(['pupilId', df_incomp['date']])['pupilId'].\
+        count()
     dates_incomp.rename('count_incomplete', inplace=True)
-    warnings.filterwarnings('default')
 
-    df_datesFrame = pd.concat([pd.DataFrame(dates_lesson), pd.DataFrame(dates_incomp)], axis=1)
+    # Union two dates lists
+    df_datesFrame = pd.concat(\
+        [pd.DataFrame(dates_lesson), pd.DataFrame(dates_incomp)], axis=1)
     df_datesFrame.fillna(0, inplace=True)
-    
-    return df_datesFrame
-
-def load_dates_frame(configuration):
-    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DATES
-    df_datesFrame = pd.read_csv(fname, delimiter=',', index_col=0)
-    
-    # Convert date string into object
-    date_format = configuration.CSV_DATE_FORMAT
-    df_datesFrame['date'] = pd.to_datetime(df_datesFrame['date'], format=date_format)
-
-    # Set index hierarchy
-    df_datesFrame.set_index(['pupilId', 'date'], inplace=True)
-
-    print('The dates frame has already been assigned customer month and saved in a file. The file has been loaded!')
 
     return df_datesFrame
 
-def assign_customer_month(df_subspt, df_datesFrame, configuration):
+def _assign_customer_month(df_subspt, df_datesFrame, configuration):
     '''Assign customer month to each date in the common dates frame.
 
     Parameters
@@ -195,6 +241,16 @@ def assign_customer_month(df_subspt, df_datesFrame, configuration):
 
     df_datesFrame.set_index(['pupilId', 'date']) # recover the index hierarchy
 
+    return df_datesFrame
+
+def _generate_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
+    
+    # Construct the union dates frame
+    df_datesFrame = _combine_dates_frame(df_lesson, df_incomp)
+    
+    # Assign customer month to the dates frame
+    df_datesFrame = _assign_customer_month(df_subspt, df_datesFrame, configuration)
+
     # Save into CSV file
     fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
     fname = fpath + configuration.DATA_DATES
@@ -205,64 +261,64 @@ def assign_customer_month(df_subspt, df_datesFrame, configuration):
 
     return df_datesFrame
 
-def compute_customer_month(df_subspt, configuration):
-    print("Calculate customer month in the subscription table.")
-    warnings.filterwarnings("ignore") # it is known that a warning message will appear here. However, we can safely hide it.
-    df_subspt['num_months'] = 1
-    df_subspt.loc[df_subspt['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
+def _load_dates_frame(configuration):
     
-    df_subspt['customer_month'] = 0
-    def calc_customer_month(df_pupil):
-        # Sort the date in ascending order
-        df_pupil.sort_values('subscription_start_date', inplace=True)  
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DATES
+    df_datesFrame = pd.read_csv(fname, delimiter=',', index_col=0)
     
-        df_pupil['customer_month'] = df_pupil['num_months'].cumsum()
-    
-        return df_pupil
-    g = df_subspt.groupby('pupilId')
-    
-    tqdm.pandas()
-    df_subspt = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
-    warnings.filterwarnings('default')
-    
-    return df_subspt
+    # Convert date string into object
+    date_format = configuration.CSV_DATE_FORMAT
+    df_datesFrame['date'] = pd.to_datetime(df_datesFrame['date'], format=date_format)
 
-def _assign_customer_month(df_subspt, df_lesson, date_field, duration_field, configuration):
-    '''Assign customer month to each daily record in lesson datafame (complete or incomplete).
-    
+    # Set index hierarchy
+    df_datesFrame.set_index(['pupilId', 'date'], inplace=True)
+
+    print('The dates frame has already been assigned customer month and saved in a file. The file has been loaded!')
+
+    return df_datesFrame
+
+def construct_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
+    '''Construct the union dates frame from all dates available in both complete 
+    and incomplete lesson history tables. The date frame also contains: 
+    (1) the number of records within a day in each of the lesson history tables;
+    (2) the corresponding customer month.
+
     Parameters
     ----------
     df_subspt: pandas.DataFrame
         Subscription table. The customer month shall have already been computed
         and assigned to each subscription record.
-
+        
     df_lesson: pandas.DataFrame
+        Complete lesson history table.
+
+    df_incomp: pandas.DataFrame
+        Incomplete lesson history table.
+
+    configuration: Config object
+        Configuration settings.
+
+    Returns
+    -------
+    df_datesFrame: pandas.DataFrame
+        Dates frame that contain all dates available in both complete and 
+        incomplete lesson history tables.
+        Index level 0 = pupilId;
+        Index level 1 = date.
     '''
     
-    # Sum time taken within a day
-    df_lesson_usage = pd.DataFrame(df_lesson.groupby(['pupilId', df_lesson[date_field].dt.date])[duration_field].sum(), \
-                                    columns=[duration_field])
-    df_lesson_usage.reset_index(inplace=True)
-
-    # Assign customer month number to the date
-    df_lesson_usage['customer_month'] = 0 # initialisation
-    num_records = df_subspt.shape[0]
-    warnings.filterwarnings('ignore')
-    for i_record, row in zip(tqdm(range(num_records)), df_subspt.itertuples()):
-        criterion1 = df_lesson_usage.pupilId == row.pupilId
-        criterion21 = df_lesson_usage[date_field] >= row.subscription_start_date.date()
-        criterion22 = df_lesson_usage[date_field] <= row.subscription_end_date.date()
-        
-        if row.subscription_type == configuration.TYPE_MONTHLY:
-            df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = \
-                row.customer_month
-        elif row.subscription_type == configuration.TYPE_ANNUAL:       
-            cmonth = row.customer_month - 12 + \
-                np.ceil((df_lesson_usage[date_field]-row.subscription_start_date.date()).dt.days/30)
-            df_lesson_usage.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = cmonth
-    warnings.filterwarnings('default')
+    print('Construct data-driven dates frame.')
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + \
+        configuration.DATA_DATES
+    if os.path.isfile(fname):
+        return _load_dates_frame(configuration)
+    else:
+        return _generate_dates_frame(\
+            df_subspt, df_lesson, df_incomp, configuration)
     
-    return df_lesson_usage
+    return df_datesFrame
+
+#endregion Date Frame
 
 def _generate_subspt_timeseries(df_subspt, configuration): 
     
@@ -500,64 +556,3 @@ def subspt_survival(df_subspt, subscription_type, start_date, period_term, perio
         dates.append(p_end_date)
 
     return pd.DataFrame({'survival_count': survival_count}, index=dates)
-
-def _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration):
-    
-    ## Pre-process: remove subscribers whose final customer-month number cannot be determined 
-    cutoff_date = pd.to_datetime(configuration.CUTOFF_DATE, format=configuration.CSV_DATE_FORMAT)
-    first_date_impFromData = df_subspt.subscription_start_date.min()
-    pupils_toBeRemoved = filter_subspt_data(df_subspt, first_date_impFromData, cutoff_date, remove_annual_subspt=False)
-
-    df_lesson1 = df_lesson[~df_lesson.pupilId.isin(pupils_toBeRemoved)]
-    df_incomp1 = df_incomp[~df_incomp.pupilId.isin(pupils_toBeRemoved)]
-    df_subspt1 = df_subspt[~df_subspt.pupilId.isin(pupils_toBeRemoved)]
-    
-    # Define customer-month number in df_subspt table
-    df_subspt1 = compute_customer_month(df_subspt1, configuration)
-
-    # Assign customer-month number to other tables
-    print('Start assigning customer month for complete lesson table.')
-    df_lesson_usage = _assign_customer_month(df_subspt1, df_lesson1, 'marked', 'timeTaken', configuration)
-    print('\nStart assigning customer month for incomplete lesson table.')
-    df_incomp_usage = _assign_customer_month(df_subspt1, df_incomp1, 'created', 'time_taken', configuration)
-
-    # Concatenate two usage tables
-    df_lesson_usage.rename(columns={'marked':'date', 'timeTaken':'time_taken_complete'}, inplace=True)
-    df_incomp_usage.rename(columns={'created':'date', 'time_taken':'time_taken_incomplete'}, inplace=True)
-    df_lesson_usage.set_index(['pupilId', 'date'], inplace=True)
-    df_incomp_usage.set_index(['pupilId', 'date'], inplace=True)
-
-    df_usage = pd.concat([df_lesson_usage, df_incomp_usage], axis=1)
-    df_usage = df_usage.groupby(df_usage.columns, axis=1).agg(np.max) # there are 2 customer_month columns, merge them into 1
-    df_usage.replace(np.nan, 0.0, inplace=True) # replace nan cells of time taken by 0
-
-    df_usage = df_usage[df_usage.customer_month!=0] # remove data points beyond customer-month of interest
-
-    # Save into CSV file
-    fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
-    fname = fpath + configuration.DATA_USAGE
-
-    if not os.path.exists(fpath):
-        os.makedirs(fpath)
-    df_usage.reset_index().to_csv(fname, index=False)
-
-    return df_usage
-
-def _load_customer_usage(configuration):
-    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
-    df_usage = pd.read_csv(fname, delimiter=',')
-    
-    time_format = configuration.CSV_TIME_FORMAT
-    date_format = configuration.CSV_DATE_FORMAT
-    df_usage['date'] = pd.to_datetime(df_usage['date'], format=date_format+" "+time_format)
-    
-    print('The usage has already been computed and saved in a file. The file has been loaded!')
-
-    return df_usage
-
-def customer_usage(df_subspt, df_lesson, df_incomp, configuration):
-    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_USAGE
-    if os.path.isfile(fname):
-        return _load_customer_usage(configuration)
-    else:
-        return _generate_customer_usage(df_subspt, df_lesson, df_incomp, configuration)

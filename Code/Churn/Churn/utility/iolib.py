@@ -1,3 +1,4 @@
+import warnings
 import pandas as pd
 
 def _generate_lesson_key(df):
@@ -10,8 +11,7 @@ def _generate_lesson_key(df):
     return df
 
 def retrieve_data(configuration):
-    '''
-    Load data from CSV files and pre-process data
+    '''Load data from CSV files and pre-process data
     '''
     
     # Load Data
@@ -34,6 +34,7 @@ def retrieve_data(configuration):
     date_format = configuration.CSV_DATE_FORMAT
     root_datetime = pd.to_datetime("00:00:00", format=time_format)
 
+    warnings.filterwarnings('ignore')
     ## Pre-process fname_lesson
     # Renew DataFrame indices
     df_lesson.set_index('lesson_history_id', inplace=True)
@@ -42,39 +43,60 @@ def retrieve_data(configuration):
     df_lesson.timeTaken = df_lesson.timeTaken - root_datetime
     df_lesson.timeTaken = df_lesson.timeTaken.dt.seconds
     # Convert datetime string to object
-    df_lesson.marked = pd.to_datetime(df_lesson.marked, format=date_format+" "+time_format)
+    df_lesson.marked = pd.to_datetime(df_lesson.marked, \
+        format=date_format+" "+time_format)
+    df_lesson.marked = pd.to_datetime(\
+        df_lesson.marked.dt.date.values) # keep only date, remove time
     # Re-fill 'NA' in the field topicId
     df_lesson['topicId'] = df_lesson['topicId'].fillna('NA')
     # Add lesson keys
     df_lesson = _generate_lesson_key(df_lesson)
+    # Rename columns 
+    df_lesson.rename(\
+        columns={'marked':'date', 'timeTaken':'time_taken_complete'}, \
+        inplace=True)
     
     ## Pre-process fname_incomp
     # Renew DataFrame indices
     df_incomp.set_index('incomplete_lesson_log_id', inplace=True)
     # Covert duration string to numerics (in seconds)
-    df_incomp['time_taken'] = pd.to_datetime(df_incomp['time_taken'], format=time_format)
+    df_incomp['time_taken'] = pd.to_datetime(df_incomp['time_taken'], \
+        format=time_format)
     df_incomp['time_taken'] = df_incomp['time_taken'] - root_datetime
     df_incomp['time_taken'] = df_incomp['time_taken'].dt.seconds
     # Convert datetime string to object
-    df_incomp['created'] = pd.to_datetime(df_incomp['created'], format=date_format+" "+time_format)
+    df_incomp['created'] = pd.to_datetime(df_incomp['created'], \
+        format=date_format+" "+time_format)
+    df_incomp['created'] = pd.to_datetime(\
+        df_incomp['created'].dt.date.values) # keep only date, remove time
     # Re-fill 'NA' in the field topicId
     df_incomp['topicId'] = df_incomp['topicId'].fillna('NA')
     # Add lesson keys
     df_incomp = _generate_lesson_key(df_incomp)
+    # Rename columns 
+    df_incomp.rename(\
+        columns={'created':'date', 'time_taken':'time_taken_incomplete'}, \
+        inplace=True)
 
     ## Pre-process fname_subspt
     # Convert datetime string to object
-    df_subspt.subscription_start_date = pd.to_datetime(df_subspt.subscription_start_date, format=date_format)
-    df_subspt.subscription_end_date = pd.to_datetime(df_subspt.subscription_end_date, format=date_format)
+    df_subspt.subscription_start_date = pd.to_datetime(\
+        df_subspt.subscription_start_date, format=date_format)
+    df_subspt.subscription_end_date = pd.to_datetime(\
+        df_subspt.subscription_end_date, format=date_format)
     # Add a new column measuring the subscription lenth
-    df_subspt['subscription_length'] = (df_subspt.subscription_end_date-df_subspt.subscription_start_date).dt.days
+    df_subspt['subscription_length'] = \
+        (df_subspt.subscription_end_date-df_subspt.subscription_start_date).dt.days
     
     ## Pre-process fname_crclum
-    # NOTE: in the topicId field, "NA" entries will be read as nan type, need to convert back to string type
+    # NOTE: in the topicId field, "NA" entries will be read as nan type,
+    # need to convert back to string type
     df_crclum['topicId'] = df_crclum['topicId'].fillna('NA')
 
     ## Pre-process fname_pupils
     df_pupils['dob'] = pd.to_datetime(df_pupils['dob']).dt.date
     df_pupils.set_index(['pupilId'], inplace=True)
+
+    warnings.filterwarnings('default')
 
     return df_subspt, df_lesson, df_incomp, df_crclum, df_pupils

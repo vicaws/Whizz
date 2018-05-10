@@ -7,6 +7,7 @@ import utility.iolib
 import utility.plotlib
 import utility.df
 
+
 def test_dates_frame():
     # Setup configuration
     cfg = config.ResearchConfig

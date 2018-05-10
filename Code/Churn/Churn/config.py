@@ -1,3 +1,6 @@
+################################################################################
+# RULE of Length of Line = 80 chars
+
 class Config:
     # Data
     DATA_FOLDER_PATH = "../../../Data/"
