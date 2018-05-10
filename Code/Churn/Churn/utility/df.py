@@ -6,6 +6,21 @@ import pandas as pd
 from tqdm import tqdm
 
 def _remove_unsteady_data(df_subspt_timeseries):
+    '''Replace values by numpy.NaN for unsteady period in the subscription descriptive time series
+    data. Unstead period refers to the first month for monthly subscription data, or the first year
+    for annual subscription data.
+
+    Parameters:
+    -----------
+    df_subspt_timeseries: pandas.DataFrame
+        Subscription descriptive time series data frame.
+
+    Returns:
+    --------
+    df_subspt_timeseries: pandas.DataFrame
+        Updated subscription descriptive time series data frame with data points during unsteady
+        period being removed.
+    '''
 
     first_date = df_subspt_timeseries.index.min()
     threshold_date_mon = first_date + pd.to_timedelta(31, unit='D')
@@ -37,6 +52,27 @@ def _remove_unsteady_data(df_subspt_timeseries):
     return df_subspt_timeseries
 
 def filter_subspt_data(df_subspt, start_date, end_date, remove_annual_subspt):
+    '''Filter the subsciption table data by given start and end dates of study.
+
+    Parameters
+    ----------
+    df_subspt: pandas.DataFrame
+        Subscription table.
+
+    start_date: pandas.TimeStamp
+        Start date of study period of interest.
+
+    end_date: pandas.TimeStamp
+        End date of study period of interest.
+
+    remove_annual_subspt: boolean
+        If True, then remove all subscribers who have had any annual subscriptions.
+
+    Returns
+    -------
+    pupils_toBeRemoved: array-like
+        1D array of pupils' ID. 
+    '''
     # remove customers who have not already cancelled
     pupils_notcancelled = df_subspt[df_subspt['subscription_end_date'] > end_date]['pupilId'].unique()
     print('By the cutoff date {}, there are {} active subscriptions.'.format(end_date.date(), len(pupils_notcancelled)))
@@ -82,7 +118,7 @@ def construct_dates_frame(df_lesson, df_incomp):
         Index level 0 = pupilId;
         Index level 1 = date.
     '''
-    
+    warnings.filterwarnings('ignore')
     df_lesson.rename(columns={'marked':'date'}, inplace=True)
     df_lesson['date'] = pd.to_datetime(df_lesson['date'].dt.date.values) # keep only date, remove time
     dates_lesson = df_lesson.groupby(['pupilId', df_lesson['date']])['pupilId'].count()
@@ -92,10 +128,26 @@ def construct_dates_frame(df_lesson, df_incomp):
     df_incomp['date'] = pd.to_datetime(df_incomp['date'].dt.date.values) # keep only date, remove time
     dates_incomp = df_incomp.groupby(['pupilId', df_incomp['date']])['pupilId'].count()
     dates_incomp.rename('count_incomplete', inplace=True)
+    warnings.filterwarnings('default')
 
     df_datesFrame = pd.concat([pd.DataFrame(dates_lesson), pd.DataFrame(dates_incomp)], axis=1)
     df_datesFrame.fillna(0, inplace=True)
     
+    return df_datesFrame
+
+def load_dates_frame(configuration):
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DATES
+    df_datesFrame = pd.read_csv(fname, delimiter=',', index_col=0)
+    
+    # Convert date string into object
+    date_format = configuration.CSV_DATE_FORMAT
+    df_datesFrame['date'] = pd.to_datetime(df_datesFrame['date'], format=date_format)
+
+    # Set index hierarchy
+    df_datesFrame.set_index(['pupilId', 'date'], inplace=True)
+
+    print('The dates frame has already been assigned customer month and saved in a file. The file has been loaded!')
+
     return df_datesFrame
 
 def assign_customer_month(df_subspt, df_datesFrame, configuration):

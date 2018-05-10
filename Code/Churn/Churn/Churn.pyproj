@@ -10,6 +10,8 @@
     <OutputPath>.</OutputPath>
     <Name>Churn</Name>
     <RootNamespace>Churn</RootNamespace>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>

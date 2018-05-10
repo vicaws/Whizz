@@ -7,46 +7,30 @@ import utility.iolib
 import utility.plotlib
 import utility.df
 
-if __name__ == "__main__":
-
+def test_dates_frame():
     # Setup configuration
     cfg = config.ResearchConfig
     time_format = cfg.CSV_TIME_FORMAT
     date_format = cfg.CSV_DATE_FORMAT
+    cutoff_date = pd.to_datetime(cfg.CUTOFF_DATE, format=cfg.CSV_DATE_FORMAT)
 
     # Retrieve data
-    df_subspt, df_lesson, df_incomp, df_crclum = utility.iolib.retrieve_data(cfg)
+    df_subspt, df_lesson, df_incomp, df_crclum, df_pupils = utility.iolib.retrieve_data(cfg)
     print("Complete loading data for subscription and lesson history!")
-    print("")
 
-    utility.df.customer_usage(df_subspt, df_lesson, df_incomp, cfg)
+    # Filter data
+    cutoff_date = pd.to_datetime(cfg.CUTOFF_DATE, format=cfg.CSV_DATE_FORMAT)
+    first_date_impFromData = df_subspt.subscription_start_date.min()
 
+    pupils_toBeRemoved = utility.df.filter_subspt_data(df_subspt, first_date_impFromData, cutoff_date, remove_annual_subspt=False)
+    df_lesson1 = df_lesson[~df_lesson['pupilId'].isin(pupils_toBeRemoved)]
+    df_incomp1 = df_incomp[~df_incomp['pupilId'].isin(pupils_toBeRemoved)]
+    df_subspt1 = df_subspt[~df_subspt['pupilId'].isin(pupils_toBeRemoved)]
 
-    #start_date = pd.to_datetime('2016-02-01')
-    #end_date = pd.to_datetime('2016-03-01')
-    #dates = pd.date_range(start=start_date, end=end_date, freq='D')
-    #subspt_type = 'Monthly'
-    #p_term = 24
-    #p_unit = 'M'
+    df_datesFrame = utility.df.construct_dates_frame(df_lesson1, df_incomp1)
+    df_subspt1 = utility.df.compute_customer_month(df_subspt1, cfg)
+    df_datesFrame = utility.df.assign_customer_month(df_subspt1, df_datesFrame, cfg)
+    pass
 
-    #survival_counts = np.zeros([len(dates), p_term])
-
-    #i = 0
-    #for date in dates:
-    #    survival = utility.df.subspt_survival(df_subspt, subspt_type, date, p_term, p_unit)
-    #    survival_counts[i,:] = np.array(survival.survival_count)
-    #    i = i + 1
-
-    #utility.plotlib.survival(survival_counts, cfg)
-    # Distribution of subscription length per pupil
-    #utility.plotlib.subspt_dist_cancelled(df_subspt, cfg)
-
-    #print("Start preparing the time-series data for subscription.")
-    #df_subspt_timeseries = utility.df.subspt_timeseries(df_subspt, cfg)
-
-    # Active subscriptions over time
-    # Average residual subscription length per pupil
-    #utility.plotlib.active_subspt(df_subspt_timeseries, cfg)
-
-
-    
+if __name__ == "__main__":
+    test_dates_frame()

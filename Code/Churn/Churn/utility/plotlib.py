@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+#region Descriptive Statistics
+
 def subspt_dist(df_subspt, configuration):
     fig = plt.figure(figsize=(10,3))
 
@@ -200,6 +202,11 @@ def performance_ratio(df_subspt_timeseries, configuration):
     plt.tight_layout()
     plt.savefig(fname)
 
+#endregion
+
+
+#region Survival Analysis
+
 def survival(survival_counts, configuration):
     
     num_trials = survival_counts.shape[0]
@@ -276,3 +283,5 @@ def survival_customer_month(df_subspt, configuration):
     fname = configuration.PLOT_FOLDER + configuration.PLOT_SURVIVAL_CM
     plt.tight_layout()
     plt.savefig(fname)
+
+#endregion 
