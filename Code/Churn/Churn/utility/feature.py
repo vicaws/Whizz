@@ -26,6 +26,20 @@ class Feature(object):
     add_age:
         Add pupils' age to features data frame. 1 column is added:
         (1) age - precise float representation where rounding may be necessary.
+
+    add_outcome:
+        Add count of different lesson outcomes to feature data frame.
+        The outcomes have been categorised into 6 groups according to 2 fields
+        in the complete lesson table: outcome and run_mode. 8 columns are added:
+        (1) num_fwrd;
+        (2) num_pass;
+        (3) num_stat;
+        (4) num_fail;
+        (5) num_back;
+        (6) num_repl;
+        (7) num_assess - sum of (1)-(5);
+        (8) num_attempt - sum of (1)-(6) and count_incomplete from the dates 
+        frame.
     """
 
     def __init__(self, df_features):
@@ -107,3 +121,63 @@ class Feature(object):
 
         print('+ Add feature: pupils\' age.')
         self.df_features_ = df_features.groupby(level=0).apply(calc_age)
+
+    def add_outcome(self, df_lesson):
+        '''Add count of different lesson outcomes to feature data frame.
+        The outcomes have been categorised into 6 groups according to 2 fields
+        in the complete lesson table: outcome and run_mode.
+        '''
+
+        mask_fwrd = (df_lesson['outcome']=='p') & (df_lesson['run_mode']=='j')
+        num_fwrd = df_lesson[mask_fwrd].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        mask_pass = ((df_lesson['outcome']=='p')&(df_lesson['run_mode']!='j')) |\
+            ((df_lesson['outcome']=='s') & (df_lesson['run_mode']=='j'))
+        num_pass = df_lesson[mask_pass].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        mask_stat = (df_lesson['outcome']=='s') & (df_lesson['run_mode']!='j')
+        num_stat = df_lesson[mask_stat].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        mask_fail = (df_lesson['outcome']=='f') & (df_lesson['run_mode']=='x')
+        num_fail = df_lesson[mask_fail].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        mask_back = (df_lesson['outcome']=='f') & (df_lesson['run_mode']=='b')
+        num_back = df_lesson[mask_back].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        mask_repl = (df_lesson['outcome']=='0') & (df_lesson['run_mode']=='r')
+        num_repl = df_lesson[mask_repl].\
+            groupby(['pupilId', 'date'])['outcome'].count()
+
+        num_fwrd.rename('num_fwrd', inplace=True)
+        num_pass.rename('num_pass', inplace=True)
+        num_stat.rename('num_stat', inplace=True)
+        num_fail.rename('num_fail', inplace=True)
+        num_back.rename('num_back', inplace=True)
+        num_repl.rename('num_repl', inplace=True)
+
+        df_outcome = pd.concat(
+            [num_fwrd, num_pass, num_stat, num_fail, num_back, num_repl], 
+            axis=1)
+        df_outcome.fillna(0, inplace=True)
+
+        df_outcome['num_attempt'] = df_outcome.sum(axis=1)
+        df_outcome['num_assess'] = df_outcome['num_attempt'] - \
+            df_outcome['num_repl']
+
+        # Append to feature data frame
+        df_features1 = pd.concat([self.df_features_, df_outcome], axis=1)
+        
+        # Fill NaN
+        df_features1.replace(np.nan, 0.0, inplace=True)
+
+        # The number of attempts should also include those in incomplete table
+        df_features1.iloc[:].loc[:,'num_attempt'] = \
+            df_features1['num_attempt'] + df_features1['count_incomplete']
+
+        print('+ Add feature: outcome.')
+        self.df_features_ = df_features1
