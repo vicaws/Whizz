@@ -181,3 +181,108 @@ class Feature(object):
 
         print('+ Add feature: outcome.')
         self.df_features_ = df_features1
+
+class FeatureCM(object):
+    """Class of constructing, updating, managing and using features aggregated 
+    in a specific customer month.
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+
+    """
+
+    
+
+    def __init__(self, feature, customer_month, df_subspt):
+        self.feature = feature
+        self.cmonth = customer_month
+        self.df_subspt = df_subspt
+
+        self._df_features, self.df_whizz_ = self._initialise()
+
+    def _initialise(self):
+        
+        # Abstract information of the studying customer month only
+        df_features = self.feature.df_features_
+        df_features1 = df_features[df_features['customer_month']==self.cmonth]
+
+        # Construct the basic data frame
+        num_complete = df_features1.groupby(level=0)['count_complete'].sum()
+        num_incomplete = df_features1.groupby(level=0)['count_incomplete'].sum()
+
+        df_whizz = pd.DataFrame({'num_complete': num_complete,
+                                 'num_incomplete': num_incomplete,
+                                 'num_attempt': num_complete+num_incomplete
+                                 })
+
+        # Identify churner and non-churner
+        pupils_nextMonth = self.df_subspt[
+            self.df_subspt['customer_month']==(self.cmonth+1)]\
+                ['pupilId'].unique()
+        pupils_nextAnnual = self.df_subspt[
+            self.df_subspt['customer_month']==(self.cmonth+12)]\
+                ['pupilId'].unique()
+        pupils_nextMonthRenew = np.union1d(pupils_nextMonth, pupils_nextAnnual)
+
+        pupils_thisMonth = self.df_subspt[
+            self.df_subspt['customer_month']==self.cmonth]['pupilId'].unique()
+        pupils_nextMonthCancel = np.setdiff1d(pupils_thisMonth, 
+                                              pupils_nextMonthRenew)
+
+        df_whizz = df_whizz.assign(churn= 0)
+        df_whizz.loc[df_whizz.index.isin(pupils_nextMonthCancel), 'churn'] = 1
+
+        return df_features1, df_whizz
+
+    def add_usageTime(self):
+        df_features1 = self._df_features
+        time_taken = df_features1.time_taken_complete + \
+            df_features1.time_taken_incomplete
+        df_features1 = df_features1.assign(time_taken=time_taken)
+        
+        usage_complete = df_features1.groupby(level=0)\
+            ['time_taken_complete'].sum()
+        usage_incomplete = df_features1.groupby(level=0)\
+            ['time_taken_incomplete'].sum()
+        usage = df_features1.groupby(level=0)['time_taken'].sum()
+
+        self.df_whizz_ = self.df_whizz_.assign(usage_complete=usage_complete,
+                                               usage_incomplete=usage_incomplete,
+                                               usage=usage)
+
+    def add_progress(self):
+        df_features1 = self._df_features
+        progress = df_features1.groupby(level=0)['progressions_delta'].sum()
+
+        self.df_whizz_ = self.df_whizz_.assign(progress=progress)
+        
+    def add_age(self):
+        df_features1 = self._df_features
+        age = df_features1.groupby(level=0)['age'].mean()
+
+        self.df_whizz_ = self.df_whizz_.assign(age=age)
+
+    def add_outcome(self):
+        df_features1 = self._df_features
+        
+        num_assess = df_features1.groupby(level=0)['num_assess'].sum()
+        num_attempt = df_features1.groupby(level=0)['num_attempt'].sum()
+        num_fwrd = df_features1.groupby(level=0)['num_fwrd'].sum()
+        num_back = df_features1.groupby(level=0)['num_back'].sum()
+        num_pass = df_features1.groupby(level=0)['num_pass'].sum()
+        num_fail = df_features1.groupby(level=0)['num_fwrd'].sum()
+
+        rate_assess = num_assess / num_attempt
+        rate_pass = (num_pass+num_fwrd) / num_assess
+        rate_fail = (num_fail+num_back) / num_assess
+        rate_fwrd = num_fwrd / num_assess
+        rate_back = num_back / num_assess
+
+        self.df_whizz_ = self.df_whizz_.assign(rate_assess=rate_assess,
+                                               rate_pass=rate_pass,
+                                               rate_fail=rate_fail,
+                                               rate_fwrd=rate_fwrd,
+                                               rate_back=rate_back)

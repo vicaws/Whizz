@@ -132,10 +132,10 @@ def compute_customer_month(df_subspt, configuration):
     '''
     
     print("Calculate customer month in the subscription table.")
-    warnings.filterwarnings("ignore") # it is known that a warning message will 
-                                      # appear here. But we can safely hide it.
-    df_subspt['num_months'] = 1
-    df_subspt.loc[df_subspt['subscription_type']==configuration.TYPE_ANNUAL, 'num_months'] = 12
+    df_subspt = df_subspt.assign(num_months=1)
+    df_subspt.iloc[:].loc[
+        df_subspt['subscription_type']==configuration.TYPE_ANNUAL, 
+        'num_months'] = 12
     
     df_subspt['customer_month'] = 0
     def calc_customer_month(df_pupil):
@@ -149,7 +149,6 @@ def compute_customer_month(df_subspt, configuration):
     
     tqdm.pandas()
     df_subspt = g.progress_apply(calc_customer_month).reset_index(level=0, drop=True)
-    warnings.filterwarnings('default')
     
     return df_subspt
 
