@@ -182,6 +182,49 @@ class Feature(object):
         print('+ Add feature: outcome.')
         self.df_features_ = df_features1
 
+    def add_score(self, df_lesson, df_incomp):
+        '''Add scores achieved and the total number of questions to feature data
+        frame. Note that each question has a score of 1, so that the number of 
+        questions equal full marks.
+        '''
+
+        df_lesson_daily = df_lesson.groupby(['pupilId', 'date'])\
+            [['score','totalQuestions']].sum()
+        df_lesson_daily.rename(
+            columns={'score':'score_complete', 
+                     'totalQuestions':'question_complete'}, inplace=True)
+        
+        # For incomplete lesson history records, each row records one attempt
+        # and all attempts on one lesson share the same ID. Therefore, we should 
+        # only consider the last attempt (where score and the number of questions
+        # are highest).
+        df_incomp_combineAttempts = df_incomp.\
+            groupby('incomplete_lesson_log_id')\
+            [['pupilId', 'date', 'score','total_questions']].max()
+        df_incomp_combineAttempts.reset_index(inplace=True)
+        df_incomp_daily = df_incomp_combineAttempts.groupby(['pupilId', 'date'])\
+            [['score','total_questions']].sum()
+        df_incomp_daily.rename(
+            columns={'score':'score_incomplete', 
+                     'total_questions':'question_incomplete'}, inplace=True)
+
+        df = pd.concat([df_lesson_daily, df_incomp_daily], axis=1)
+        
+        # Fill NaN
+        df.fillna(0.0, inplace=True)
+        
+        df['score'] = df.score_complete + df.score_incomplete
+        df['num_questions'] = df.question_complete + df.question_incomplete
+        df.drop(columns=['score_complete', 'score_incomplete', 
+                         'question_complete', 'question_incomplete'], 
+                inplace=True)
+
+        # Append to feature data frame
+        df_features1 = pd.concat([self.df_features_, df], axis=1)
+
+        print('+ Add feature: score.')
+        self.df_features_ = df_features1
+
 class FeatureCM(object):
     """Class of constructing, updating, managing and using features aggregated 
     in a specific customer month.
@@ -193,8 +236,6 @@ class FeatureCM(object):
     -------
 
     """
-
-    
 
     def __init__(self, feature, customer_month, df_subspt):
         self.feature = feature
@@ -286,3 +327,11 @@ class FeatureCM(object):
                                                rate_fail=rate_fail,
                                                rate_fwrd=rate_fwrd,
                                                rate_back=rate_back)
+
+    def add_score(self):
+        df_features1 = self._df_features
+
+        score = df_features1.groupby(level=0)['score'].sum()
+        num_questions = df_features1.groupby(level=0)['num_questions'].sum()
+
+        self.df_whizz_ = self.df_whizz_.assign(score=score/num_questions)
