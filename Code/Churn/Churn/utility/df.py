@@ -219,7 +219,8 @@ def _assign_customer_month(df_subspt, df_datesFrame, configuration):
         Updated dates frame that includes an additional column of customer month.
     '''
     
-    df_datesFrame.reset_index(inplace=True) # remove the index hierarchy for the following calculation
+    df_datesFrame.reset_index(inplace=True) # remove the index hierarchy for the
+    # following calculation
     df_datesFrame['customer_month'] = 0     # initialisation
     num_records = df_subspt.shape[0]
 
@@ -230,12 +231,19 @@ def _assign_customer_month(df_subspt, df_datesFrame, configuration):
         criterion22 = df_datesFrame.date <= row.subscription_end_date
         
         if row.subscription_type == configuration.TYPE_MONTHLY:
-            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = \
-                    row.customer_month
-        elif row.subscription_type == configuration.TYPE_ANNUAL:       
+            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 
+                              'customer_month'] = row.customer_month
+        elif row.subscription_type == configuration.TYPE_ANNUAL:
             cmonth = row.customer_month - 12 + \
-                    np.ceil(( df_datesFrame.date-row.subscription_start_date).dt.days/30)
-            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 'customer_month'] = cmonth
+                np.ceil(( df_datesFrame.date-row.subscription_start_date)\
+                .dt.days/30)
+            df_datesFrame.loc[criterion1 & criterion21 & criterion22, 
+                              'customer_month'] = cmonth
+        
+        # Assign subscription end date
+        df_datesFrame.loc[criterion1 & criterion21 & criterion22, 
+                              'subscription_end_date'] = \
+                                  row.subscription_end_date
     warnings.filterwarnings('default')
 
     df_datesFrame.set_index(['pupilId', 'date']) # recover the index hierarchy
@@ -262,17 +270,22 @@ def _generate_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
 
 def _load_dates_frame(configuration):
     
-    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + configuration.DATA_DATES
+    fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + \
+        configuration.DATA_DATES
     df_datesFrame = pd.read_csv(fname, delimiter=',', index_col=0)
     
     # Convert date string into object
     date_format = configuration.CSV_DATE_FORMAT
-    df_datesFrame['date'] = pd.to_datetime(df_datesFrame['date'], format=date_format)
+    df_datesFrame['date'] = pd.to_datetime(df_datesFrame['date'], 
+                                           format=date_format)
+    df_datesFrame['subscription_end_date'] = pd.to_datetime(
+        df_datesFrame['subscription_end_date'], format=date_format)
 
     # Set index hierarchy
     df_datesFrame.set_index(['pupilId', 'date'], inplace=True)
 
-    print('The dates frame has already been assigned customer month and saved in a file. The file has been loaded!')
+    print('The dates frame has already been assigned customer month and saved',
+          ' in a file. The file has been loaded!')
 
     return df_datesFrame
 

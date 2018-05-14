@@ -40,6 +40,13 @@ class Feature(object):
         (7) num_assess - sum of (1)-(5);
         (8) num_attempt - sum of (1)-(6) and count_incomplete from the dates 
         frame.
+    
+    add_hardship:
+        Add measures of hardship to feature data frame. Two measures are
+        included: stack depth and number of helps. 3 columns are added:
+        (1) ave_stackDepth
+        (2) ave_help
+        (3) sum_help
     """
 
     def __init__(self, df_features):
@@ -225,6 +232,40 @@ class Feature(object):
         print('+ Add feature: score.')
         self.df_features_ = df_features1
 
+    def add_hardship(self, df_lesson):
+        '''Add measures of hardship to feature data frame. Two measures are
+        included: stack depth and number of helps.
+        '''
+        
+        # Stack Depth: 'replay' has stackDepth = 0
+        df_lesson_sd = df_lesson[df_lesson['lesson_type']!='replay']
+        sum_stackDepth = df_lesson_sd.groupby(['pupilId', 'date'])\
+            ['stackDepth'].sum()
+        sum_stackDepth.rename('sum_stackDepth', inplace=True)
+        count_stackDepth = df_lesson_sd.groupby(['pupilId', 'date'])\
+            ['stackDepth'].count()
+        count_stackDepth.rename('count_stackDepth', inplace=True)
+
+        # Help: 'tutor_pb' has total_help=0
+        df_lesson_hp = df_lesson[df_lesson['lesson_type']!='tutor_pb']
+        sum_help = df_lesson_hp.groupby(['pupilId', 'date'])['total_help'].sum()
+        sum_help.rename('sum_help', inplace=True)
+        count_help = df_lesson_hp.groupby(['pupilId', 'date'])\
+            ['stackDepth'].count()
+        count_help.rename('count_help', inplace=True)
+
+        df_hard = pd.concat([sum_stackDepth, count_stackDepth, sum_help, count_help],
+                      axis=1)
+        
+        # Append to feature data frame
+        df_features1 = pd.concat([self.df_features_, df_hard], axis=1)
+
+        # Fill NaN
+        df_features1.fillna(0.0, inplace=True)
+
+        print('+ Add feature: hardship.')
+        self.df_features_ = df_features1
+
 class FeatureCM(object):
     """Class of constructing, updating, managing and using features aggregated 
     in a specific customer month.
@@ -244,11 +285,26 @@ class FeatureCM(object):
 
         self._df_features, self.df_whizz_ = self._initialise()
 
+    
     def _initialise(self):
         
         # Abstract information of the studying customer month only
         df_features = self.feature.df_features_
         df_features1 = df_features[df_features['customer_month']==self.cmonth]
+
+        # Keep only pupils who have option on cancellation in next month
+        last_access_date = df_features1.groupby(level=0).apply(
+            lambda df: df.index.get_level_values(level=1).max())
+        subspt_end_date = df_features1.groupby(level=0)\
+            ['subscription_end_date'].last()
+        time_last_access = (subspt_end_date - last_access_date).dt.days
+
+        time_last_access = time_last_access[time_last_access<=31] # remove data
+        pupils_withOption = time_last_access.index.values
+
+        df_features1 = df_features1[
+            df_features1.index.get_level_values(level=0).\
+                isin(pupils_withOption)]
 
         # Construct the basic data frame
         num_complete = df_features1.groupby(level=0)['count_complete'].sum()
@@ -256,7 +312,9 @@ class FeatureCM(object):
 
         df_whizz = pd.DataFrame({'num_complete': num_complete,
                                  'num_incomplete': num_incomplete,
-                                 'num_attempt': num_complete+num_incomplete
+                                 'num_attempt': num_complete+num_incomplete,
+                                 'rate_incomplete_num': num_incomplete/\
+                                     (num_complete+num_incomplete)
                                  })
 
         # Identify churner and non-churner
@@ -276,8 +334,15 @@ class FeatureCM(object):
         df_whizz = df_whizz.assign(churn= 0)
         df_whizz.loc[df_whizz.index.isin(pupils_nextMonthCancel), 'churn'] = 1
 
-        return df_features1, df_whizz
+        df_whizz = df_whizz.assign(customer_month=self.cmonth)
 
+        df_whizz = df_whizz.assign(
+            last_access=time_last_access)
+
+        return df_features1, df_whizz
+    
+    #region Add features
+    
     def add_usageTime(self):
         df_features1 = self._df_features
         time_taken = df_features1.time_taken_complete + \
@@ -292,7 +357,9 @@ class FeatureCM(object):
 
         self.df_whizz_ = self.df_whizz_.assign(usage_complete=usage_complete,
                                                usage_incomplete=usage_incomplete,
-                                               usage=usage)
+                                               usage=usage,
+                                               rate_incomplete_usage=\
+                                                   usage_incomplete/usage)
 
     def add_progress(self):
         df_features1 = self._df_features
@@ -335,3 +402,20 @@ class FeatureCM(object):
         num_questions = df_features1.groupby(level=0)['num_questions'].sum()
 
         self.df_whizz_ = self.df_whizz_.assign(score=score/num_questions)
+
+    def add_hardship(self):
+        df_features1 = self._df_features
+
+        df_hard = df_features1.groupby(level=0)\
+            [['sum_stackDepth', 'count_stackDepth', 'sum_help', 'count_help']].\
+            sum()
+
+        ave_stackDepth = df_hard['sum_stackDepth'] / df_hard['count_stackDepth']
+        ave_help = df_hard['sum_help'] / df_hard['count_help']
+        sum_help = df_hard['sum_help']
+
+        self.df_whizz_ = self.df_whizz_.assign(ave_stackDepth=ave_stackDepth,
+                                               ave_help=ave_help,
+                                               sum_help=sum_help)
+
+    #endregion
