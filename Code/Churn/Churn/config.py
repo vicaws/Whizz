@@ -23,7 +23,7 @@ class Config:
 
 class ResearchConfig(Config):  
     # Data
-    FILE_SUBFOLDER = "20180503/"
+    FILE_SUBFOLDER = "20180516/"
     FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
 
     # Study

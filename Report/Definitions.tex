@@ -1,0 +1,94 @@
+\documentclass[a4paper]{article}
+\usepackage[a4paper, total={6in, 9in}]{geometry}
+\usepackage{color}
+\setlength{\hoffset}{-0.5in}\hoffset-0.5in
+\setlength{\textwidth}{17.8cm}
+\usepackage{hyperref}
+\usepackage{amsmath, amsfonts, amsthm, amssymb}
+\usepackage{bm} % access bold symbols in maths mode
+\usepackage[super]{nth}
+\usepackage{verbatim}
+\usepackage{stmaryrd}
+\usepackage{fancyhdr}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{subfigure}
+%\usepackage{subfig}
+\usepackage{wrapfig}
+\graphicspath{{Figure/}} % Set the default folder of all figures as "Figure"
+
+\usepackage{cleveref}
+\linespread{1}
+\newfam\msbfam
+\def\Bbb#1{\fam\msbfam\relax#1}
+
+% Enable multi-columns
+\usepackage{multicol, caption}
+\setlength{\columnsep}{0.5cm}
+
+\newenvironment{Figure} % Enable inserting figures under multi-column environment
+  {\par\medskip\noindent\minipage{\linewidth}}
+  {\endminipage\par\medskip}
+\newenvironment{Table} % Enable inserting tables under multi-column environment
+   {\par\bigskip\noindent\minipage{\columnwidth}\centering}
+   {\endminipage\par\bigskip}
+
+\topmargin = 0pt
+\voffset = -20pt
+\addtolength{\textheight}{2cm}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{exa}{Example}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil} % Ceil function
+
+\newcommand{\ind}{1\hspace{-2.1mm}{1}} %Indicator Function
+\newcommand{\I}{\mathtt{i}}
+\newcommand{\D}{\mathrm{d}}
+\newcommand{\E}{\mathrm{e}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\atanh}{\mathrm{arctanh}}
+\def\equalDistrib{\,{\buildrel \Delta \over =}\,}
+\numberwithin{equation}{section}
+\def\blue#1{\textcolor{blue}{#1}}
+\def\red#1{\textcolor{red}{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\text{}\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setcounter{tocdepth}{4}
+\newpage
+%\newpage
+%\include{ThesisNotations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\fancyhead{}
+\fancyfoot{}
+\pagestyle{fancy} 
+%\fancyhead{\sffamily\small \thepage}
+%\fancyhead{\sffamily\small \nouppercase{\rightmark}}
+\fancyhead[RO,LE]{\sffamily\small \thepage}
+\fancyhead[LO,RE]{\sffamily\small \nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.0pt}
+
+% The matrix with vertical and horizontal labels
+% \usepackage{kbordermatrix}
+\usepackage{etoolbox}
+\let\bbordermatrix\bordermatrix
+\patchcmd{\bbordermatrix}{8.75}{4.75}{}{}
+\patchcmd{\bbordermatrix}{\left(}{\left[}{}{}
+\patchcmd{\bbordermatrix}{\right)}{\right]}{}{}
+
+% Tables
+\usepackage{booktabs}

@@ -1,0 +1,17 @@
+\section{\fontsize{12}{12}\selectfont Introduction to the Problem}
+\label{sec:introToProblem}
+
+We have implemented a finite element method using FEniCS to solve a time-dependent Navier-Stokes equations
+\vspace{-0.2cm}
+\begin{align}
+    \frac{\partial}{\partial t} \mathbf{u} + \mathbf{u} \cdot \nabla \mathbf{u} - \nu \Delta \mathbf{u} + \nabla p & = \mathbf{f}, \text{ in } \Omega \times (0,T],    
+    \label{eq:NavierStokes}\\
+    \nabla \cdot \mathbf{u} & = 0,  \text{ in } \Omega \times (0,T],
+    \label{eq:Incompressibility}\\
+    \mathbf{u} & = \mathbf{u}_D, \text{ on } \Gamma_D \times (0,T],
+    \label{eq:DirichletBoundary}\\
+    p & = p_N, \text{ on } \Gamma_N \times (0,T],
+    \label{eq:NeumannBoundary}
+\vspace{-0.2cm}
+\end{align}
+which are a system of equations for the velocity $\mathbf{u}$ and pressure $p$ in an incompressible fluid. $\mathbf{f}$ is a given force per unit volume and $\nu$ measures the viscosity of the fluid. The boundary of the spatial domain $\Omega$ has been split into $\Gamma_D$ and $\Gamma_N$ where different boundary conditions are imposed. Next we walk through the procedures of applying the finite element methods, implement them in FEniCS to a specific problem, and finally discuss the resulting numerics.

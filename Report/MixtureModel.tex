@@ -1,0 +1,30 @@
+\section{\fontsize{12}{12}\selectfont Mixture Model}
+
+\paragraph{Generative process}
+
+\begin{equation}
+\mathbb{P} (\mathbf{y}, \mathbf{c}, \bm \theta) = \prod_{k=1}^K G_0 (\theta_k) \prod_{n=1}^N F(y_n | \theta_{c_n}) P(c_n)
+\end{equation}
+
+\begin{itemize}
+\item $\mathbf{y} = \{y_1, y_2, \cdots, y_N \}$, observations
+\item $\mathbf{c} = \{c_1, c_2, \cdots, c_N \}$, cluster assignments
+\item $\bm \theta = \{\theta_1, \theta_2, \cdots, \theta_K \}$, cluster parameters
+\item $G_0(\theta)$, a prior over the cluster parameters
+\item $P(c)$, a prior over the mixing distribution
+\item $F(y_n|\theta_{c_n})$, a hypothetical distribution over the observations
+\item Assumptions: each observation is conditionally independent given its latent cluster assignments and the cluster parameters
+\end{itemize}
+
+\paragraph{Posterior probability of assignments}
+
+\begin{equation}
+\mathbb{P} (\mathbf{c} | \mathbf{y}) = \frac{\mathbb{P}(\mathbf{y} | \mathbf{c}) P(\mathbf{c})}{\sum_{\mathbf{c}} \mathbb{P}(\mathbf{y} | \mathbf{c}) P(\mathbf{c})},
+\end{equation}
+where
+\begin{equation}
+\mathbb{P}(\mathbf{y} | \mathbf{c}) = \int_\theta \left[ \prod_{n=1}^N F(y_n | \theta_{c_n}) \prod_{k=1}^K G_0 (\theta_k) \right] \text{d} \theta
+\end{equation}
+
+
+BNP clustering assume that there is an infinite number of latent clusters (namely $K \rightarrow +\infty$), but that a finite number of them is used to generate the observed data. There are an infinite number of clusters, though a finite data set only exhibits a finite number of active clusters.

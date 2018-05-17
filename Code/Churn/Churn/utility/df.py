@@ -256,7 +256,8 @@ def _generate_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
     df_datesFrame = _combine_dates_frame(df_lesson, df_incomp)
     
     # Assign customer month to the dates frame
-    df_datesFrame = _assign_customer_month(df_subspt, df_datesFrame, configuration)
+    df_datesFrame = _assign_customer_month(df_subspt, df_datesFrame, 
+                                           configuration)
 
     # Save into CSV file
     fpath = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE
@@ -264,7 +265,6 @@ def _generate_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
 
     if not os.path.exists(fpath):
         os.makedirs(fpath)
-    df_datesFrame.reset_index().to_csv(fname, index=False)
 
     return df_datesFrame
 
