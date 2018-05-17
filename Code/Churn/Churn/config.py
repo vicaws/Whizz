@@ -33,6 +33,11 @@ class ResearchConfig(Config):
 
     IGNORE_UNSTEADY_PERIOD = True
 
+    FEATURE_LIST = ['num_attempt', 'num_complete', 'num_incomplete',
+                    'usage', 'usage_complete', 'usage_incomplete']
+
+    HOLIDAY_MONTH = [1, 4, 5, 6, 9]
+
     # Output
     DATA_DESCR = "descriptive_stats.csv"
     DATA_DATES = "dates_frame.csv"

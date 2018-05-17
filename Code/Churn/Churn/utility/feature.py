@@ -96,7 +96,6 @@ class Feature(object):
 
         df_lesson_progress = df_lesson_progress.groupby(level=0).\
             apply(set_first_value)
-        #df_lesson_progress.reset_index(level=1, inplace=True)
 
         # Append to feature data frame
         df_features1 = pd.concat([self.df_features_, df_lesson_progress], \
@@ -254,8 +253,8 @@ class Feature(object):
             ['stackDepth'].count()
         count_help.rename('count_help', inplace=True)
 
-        df_hard = pd.concat([sum_stackDepth, count_stackDepth, sum_help, count_help],
-                      axis=1)
+        df_hard = pd.concat(
+            [sum_stackDepth, count_stackDepth, sum_help, count_help], axis=1)
         
         # Append to feature data frame
         df_features1 = pd.concat([self.df_features_, df_hard], axis=1)
@@ -265,6 +264,26 @@ class Feature(object):
 
         print('+ Add feature: hardship.')
         self.df_features_ = df_features1
+
+    def add_mathAge(self, df_lesson, df_incomp):
+        '''Add Whizz math age to feature data frame.
+        Note: current calculation only gives a very rough estimate of math age,
+        namely, the average math age over all attempts (which can be different 
+        topics) within a day.
+        '''
+
+        math_age1 = df_lesson.groupby(['pupilId', 'date'])['age'].mean() / 100.0
+        math_age2 = df_incomp.groupby(['pupilId', 'date'])['age'].mean() / 100.0
+
+        math_age = pd.concat([math_age1, math_age2], axis=1).mean(axis=1)
+        math_age.rename('math_age', inplace=True)
+
+        # Append to feature data frame
+        df_features1 = pd.concat([self.df_features_, math_age], axis=1)
+
+        print('+ Add feature: math age.')
+        self.df_features_ = df_features1
+
 
 class FeatureCM(object):
     """Class of constructing, updating, managing and using features aggregated 
@@ -278,10 +297,11 @@ class FeatureCM(object):
 
     """
 
-    def __init__(self, feature, customer_month, df_subspt):
+    def __init__(self, feature, customer_month, df_subspt, configuration):
         self.feature = feature
         self.cmonth = customer_month
         self.df_subspt = df_subspt
+        self.config = configuration
 
         self._df_features, self.df_whizz_ = self._initialise()
 
@@ -292,7 +312,7 @@ class FeatureCM(object):
         df_features = self.feature.df_features_
         df_features1 = df_features[df_features['customer_month']==self.cmonth]
 
-        # Keep only pupils who have option on cancellation in next month
+        # Keep only pupils who do have the option on cancellation in next month
         last_access_date = df_features1.groupby(level=0).apply(
             lambda df: df.index.get_level_values(level=1).max())
         subspt_end_date = df_features1.groupby(level=0)\
@@ -334,8 +354,23 @@ class FeatureCM(object):
         df_whizz = df_whizz.assign(churn= 0)
         df_whizz.loc[df_whizz.index.isin(pupils_nextMonthCancel), 'churn'] = 1
 
+        # Add customer month label
         df_whizz = df_whizz.assign(customer_month=self.cmonth)
 
+        # Add calendar month label
+        cal_month = df_features1.groupby(level=0).\
+            apply(lambda df: 
+                  df.index.get_level_values(level=1).max().month)
+        
+        df_whizz = df_whizz.assign(calendar_month=cal_month)
+
+        # Add holiday/term label
+        df_whizz = df_whizz.assign(holiday=0)
+        df_whizz.loc[
+            df_whizz['calendar_month'].isin(self.config.HOLIDAY_MONTH), 
+            'holiday'] = 1
+
+        # Add time since last access
         df_whizz = df_whizz.assign(
             last_access=time_last_access)
 
@@ -363,9 +398,11 @@ class FeatureCM(object):
 
     def add_progress(self):
         df_features1 = self._df_features
-        progress = df_features1.groupby(level=0)['progressions_delta'].sum()
+        progress_delta = df_features1.groupby(level=0)['progressions_delta'].sum()
+        progress = df_features1.groupby(level=0)['progressions'].max()
 
-        self.df_whizz_ = self.df_whizz_.assign(progress=progress)
+        self.df_whizz_ = self.df_whizz_.assign(progress=progress,
+                                               progress_delta=progress_delta)
         
     def add_age(self):
         df_features1 = self._df_features
@@ -378,6 +415,7 @@ class FeatureCM(object):
         
         num_assess = df_features1.groupby(level=0)['num_assess'].sum()
         num_attempt = df_features1.groupby(level=0)['num_attempt'].sum()
+        num_replay = num_attempt-num_assess
         num_fwrd = df_features1.groupby(level=0)['num_fwrd'].sum()
         num_back = df_features1.groupby(level=0)['num_back'].sum()
         num_pass = df_features1.groupby(level=0)['num_pass'].sum()
@@ -389,7 +427,10 @@ class FeatureCM(object):
         rate_fwrd = num_fwrd / num_assess
         rate_back = num_back / num_assess
 
-        self.df_whizz_ = self.df_whizz_.assign(rate_assess=rate_assess,
+        self.df_whizz_ = self.df_whizz_.assign(num_pass=num_pass,
+                                               num_fail=num_fail,
+                                               num_replay=num_replay,
+                                               rate_assess=rate_assess,
                                                rate_pass=rate_pass,
                                                rate_fail=rate_fail,
                                                rate_fwrd=rate_fwrd,
@@ -417,5 +458,15 @@ class FeatureCM(object):
         self.df_whizz_ = self.df_whizz_.assign(ave_stackDepth=ave_stackDepth,
                                                ave_help=ave_help,
                                                sum_help=sum_help)
+
+    def add_mathAge(self):
+        df_features1 = self._df_features
+        
+        math_age = df_features1.groupby(level=0)['math_age'].mean()
+        age = self.df_whizz_['age']
+        age_diff = age - math_age
+
+        self.df_whizz_ = self.df_whizz_.assign(math_age=math_age,
+                                               age_diff=age_diff)
 
     #endregion
