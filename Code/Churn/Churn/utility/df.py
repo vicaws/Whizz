@@ -28,26 +28,46 @@ def _remove_unsteady_data(df_subspt_timeseries):
     threshold_date_mon = first_date + pd.to_timedelta(31, unit='D')
     threshold_date_ann = first_date + pd.to_timedelta(1, unit='Y')
 
-    df_subspt_timeseries['num_ccl_mon'] = df_subspt_timeseries['num_ccl_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_rnl_m2m'] = df_subspt_timeseries['num_rnl_m2m'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_rnl_m2a'] = df_subspt_timeseries['num_rnl_m2a'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_rtn_m2m'] = df_subspt_timeseries['num_rtn_m2m'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_rtn_m2a'] = df_subspt_timeseries['num_rtn_m2a'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    #df_subspt_timeseries['num_new_mon'] = df_subspt_timeseries['num_new_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_ccl_mon'] = df_subspt_timeseries['num_ccl_mon'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_rnl_m2m'] = df_subspt_timeseries['num_rnl_m2m'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_rnl_m2a'] = df_subspt_timeseries['num_rnl_m2a'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_rtn_m2m'] = df_subspt_timeseries['num_rtn_m2m'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_rtn_m2a'] = df_subspt_timeseries['num_rtn_m2a'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
 
-    df_subspt_timeseries['num_ccl_ann'] = df_subspt_timeseries['num_ccl_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_rnl_a2a'] = df_subspt_timeseries['num_rnl_a2a'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_rnl_a2m'] = df_subspt_timeseries['num_rnl_a2m'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_rtn_a2a'] = df_subspt_timeseries['num_rtn_a2a'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_rtn_a2m'] = df_subspt_timeseries['num_rtn_a2m'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)   
-    #df_subspt_timeseries['num_new_ann'] = df_subspt_timeseries['num_new_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_ccl_ann'] = df_subspt_timeseries['num_ccl_ann'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_rnl_a2a'] = df_subspt_timeseries['num_rnl_a2a'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_rnl_a2m'] = df_subspt_timeseries['num_rnl_a2m'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_rtn_a2a'] = df_subspt_timeseries['num_rtn_a2a'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_rtn_a2m'] = df_subspt_timeseries['num_rtn_a2m'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
 
-    df_subspt_timeseries['num_subscriptions_monthly'] = df_subspt_timeseries['num_subscriptions_monthly'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['num_subscriptions_annual'] = df_subspt_timeseries['num_subscriptions_annual'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['num_subscriptions'] = df_subspt_timeseries['num_subscriptions'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['res_subscriptions_length_mon'] = df_subspt_timeseries['res_subscriptions_length_mon'].mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
-    df_subspt_timeseries['res_subscriptions_length_ann'] = df_subspt_timeseries['res_subscriptions_length_ann'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
-    df_subspt_timeseries['res_subscriptions_length'] = df_subspt_timeseries['res_subscriptions_length'].mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_subscriptions_monthly'] = \
+        df_subspt_timeseries['num_subscriptions_monthly'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['num_subscriptions_annual'] = \
+        df_subspt_timeseries['num_subscriptions_annual'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['num_subscriptions'] = \
+        df_subspt_timeseries['num_subscriptions'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['res_subscriptions_length_mon'] = \
+        df_subspt_timeseries['res_subscriptions_length_mon'].\
+        mask(df_subspt_timeseries.index < threshold_date_mon, np.nan)
+    df_subspt_timeseries['res_subscriptions_length_ann'] = \
+        df_subspt_timeseries['res_subscriptions_length_ann'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
+    df_subspt_timeseries['res_subscriptions_length'] = \
+        df_subspt_timeseries['res_subscriptions_length'].\
+        mask(df_subspt_timeseries.index < threshold_date_ann, np.nan)
 
     print("Due to configuration, data as of unsteady period have been removed!")
 
@@ -285,7 +305,7 @@ def _load_dates_frame(configuration):
     df_datesFrame.set_index(['pupilId', 'date'], inplace=True)
 
     print('The dates frame has already been assigned customer month and saved',
-          ' in a file. The file has been loaded!')
+          'in a file. The file has been loaded!')
 
     return df_datesFrame
 

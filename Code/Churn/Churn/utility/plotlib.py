@@ -1,6 +1,10 @@
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+
 from scipy import stats
 
 #region Descriptive Statistics
@@ -285,3 +289,92 @@ def survival_customer_month(df_subspt, configuration):
     plt.savefig(fname)
 
 #endregion 
+
+
+#region Features
+
+def feature_distribution(df_whizz, ftr_list, n_col, configuration, transform=True, ftr_list_nontransform=[]):
+    n_ftr = len(ftr_list)
+    n_row = n_ftr // n_col
+    n_row +=  n_ftr % n_col
+    pos = range(1, n_ftr+1)
+    
+    warnings.filterwarnings('ignore')
+
+    fig = plt.figure(figsize=(4*n_col, 2*n_row))
+    for i, ftr in enumerate(ftr_list):
+        ax = fig.add_subplot(n_row, n_col, pos[i])
+        x = df_whizz[ftr].values
+    
+        if (ftr in ftr_list_nontransform) or (not transform):
+            sns.distplot(x)
+        else:
+            # Box-cox transformation can only deal with positive valued data
+            # May need to add positive constants to variables to ensure positivity
+            if ftr == 'age_diff':
+                x += 10.0
+            else:
+                x += 1
+            xt, _ = stats.boxcox(x)
+            sns.distplot(xt)
+        ax.set_title(ftr)
+    
+    warnings.filterwarnings('default')
+
+    fname = configuration.PLOT_FOLDER + configuration.PLOT_FEATURE_DIST
+    plt.tight_layout()
+    plt.savefig(fname)
+
+#endregion
+
+#region Mixture Model
+
+def component_bar(expectations, predictions, n_components):
+    num_pupil = []
+    num_churn = []
+    
+    for i in range(0, n_components):
+        idx_pupils = np.where(predictions==i)[0]
+        if idx_pupils.size > 0: # remove empty groups
+            num_pupil.append(idx_pupils.shape[0])
+            num_churn.append(expectations[idx_pupils].sum())
+        
+    df = pd.DataFrame({'num_pupil':num_pupil, 'num_churn':num_churn})
+    df = df.assign(rate_churn=df.num_churn/df.num_pupil)
+    df.sort_values('rate_churn', ascending=False, inplace=True)
+    
+    fig = plt.figure(figsize=(6,5))
+    ax = fig.add_subplot(211)
+    idx = np.arange(df.shape[0])
+    ax.bar(idx, df.num_churn, alpha=0.8)
+    rects = ax.bar(idx, df.num_pupil-df.num_churn, bottom=df.num_churn, 
+                   alpha=0.8)
+    ax.set_ylabel('Number of Pupils')
+    
+    def autolabel(rects, values):
+        """Attach a text label above each bar displaying its height
+        """
+        for rect, value in zip(rects, values):
+            if not np.isnan(value):
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width()/2., 1.1*height, 
+                        '{:.1f}%'.format(value*100), 
+                        ha='center', va='bottom')
+    
+    autolabel(rects, df.rate_churn.values)
+    
+    ax = fig.add_subplot(212)
+    ax.bar(idx, df.rate_churn, alpha=0.8)
+    rects = ax.bar(idx, 1-df.rate_churn, bottom=df.rate_churn, alpha=0.8)
+    for rect, value in zip(rects, df.num_pupil):
+        ax.text(rect.get_x() + rect.get_width()/2., 0.9, 
+                '{:d}'.format(value), ha='center')
+    base_churn = expectations.sum()/expectations.shape[0]
+    ax.axhline(base_churn, linestyle='--', color='k', alpha=0.8)
+    ax.set_ylabel('Percentage')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+    
+    plt.tight_layout()
+
+#endregion

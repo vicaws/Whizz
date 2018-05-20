@@ -24,6 +24,12 @@
   <ItemGroup>
     <Compile Include="Churn.py" />
     <Compile Include="config.py" />
+    <Compile Include="model\dataEngine.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="model\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="utility\df.py" />
     <Compile Include="utility\feature.py">
       <SubType>Code</SubType>
@@ -33,6 +39,7 @@
     <Compile Include="utility\__init__.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="model\" />
     <Folder Include="utility\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

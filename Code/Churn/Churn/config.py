@@ -52,6 +52,8 @@ class ResearchConfig(Config):
 
     PLOT_SURVIVAL = "survival_analysis.png"
     PLOT_SURVIVAL_CM = "survival_analysis_CM.png"
+
+    PLOT_FEATURE_DIST = "feature_distribution.png"
     
 class TestConfig(Config):
     pass

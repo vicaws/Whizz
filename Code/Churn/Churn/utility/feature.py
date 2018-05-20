@@ -304,7 +304,6 @@ class FeatureCM(object):
         self.config = configuration
 
         self._df_features, self.df_whizz_ = self._initialise()
-
     
     def _initialise(self):
         
@@ -375,8 +374,6 @@ class FeatureCM(object):
             last_access=time_last_access)
 
         return df_features1, df_whizz
-    
-    #region Add features
     
     def add_usageTime(self):
         df_features1 = self._df_features
@@ -468,5 +465,3 @@ class FeatureCM(object):
 
         self.df_whizz_ = self.df_whizz_.assign(math_age=math_age,
                                                age_diff=age_diff)
-
-    #endregion
