@@ -27,6 +27,9 @@
     <Compile Include="model\dataEngine.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="model\performance.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="model\__init__.py">
       <SubType>Code</SubType>
     </Compile>

@@ -23,13 +23,15 @@ class Config:
 
 class ResearchConfig(Config):  
     # Data
-    FILE_SUBFOLDER = "20180516/"
+    FILE_SUBFOLDER = "20180521/"
     FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
 
     # Study
     CUTOFF_DATE = "2018-04-20"
     RETURN_GAP = 5
     RETURN_GAP_UNIT = 'D'
+
+    MONTHLY_ONLY = True
 
     IGNORE_UNSTEADY_PERIOD = True
 

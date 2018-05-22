@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
+from scipy import stats
+
 from utility.feature import Feature
 from utility.feature import FeatureCM
 
@@ -12,9 +14,29 @@ class DataEngine(object):
 
     Attributes
     ----------
+    config: Config object
+        Configuration.
+
+    max_customer_month_: numpy.int64
+        The maximal customer month number that can be inferred from the
+        subscription table (df_subspt data frame).
+
+    target_: array-like, shape=(n_sample, 1)
+        The sampled values of dependent variable y. To be specific, it is an
+        array with binary values 0 or 1 where 1 indicates churn and 0 otherwise.
+
+    data_: array-like, shape=(n_sample, n_feature)
+        The sample values of all features X.
 
     Methods
     -------
+    aggregate_features:
+        Aggregate features data over specified customer months. If the list of
+        customer months is not specified, then all available customer months
+        inferred from the subscription table will be included.
+
+    select_features:
+        Prepare data for selected features.
     """
 
     def __init__(self, df_subspt, df_datesFrame, df_lesson, df_incomp, df_pupils, 
@@ -29,6 +51,8 @@ class DataEngine(object):
         self.max_customer_month_ = df_subspt['customer_month'].max()
         self.target_ = []
         self.data_ = []
+        self.data_bc_ = []
+        self.feature_list_ = [] 
 
         self._initialise()
 
@@ -64,6 +88,9 @@ class DataEngine(object):
             ftrCM = FeatureCM(self.feature_, cmonth, self._df_subspt, 
                               self.config)
 
+            if ftrCM.df_whizz_.empty:
+                continue
+
             ftrCM.add_usageTime()
             ftrCM.add_progress()
             ftrCM.add_age()
@@ -85,5 +112,20 @@ class DataEngine(object):
     def select_features(self, feature_list):
         df_whizz1 = self.df_whizz_[feature_list]
 
+        self.feature_list_ = feature_list
         self.data_ = np.array(df_whizz1)
         self.target_ = self.df_whizz_['churn'].values
+
+    def transform_boxCox(self):
+        df_whizz1 = self.df_whizz_[self.feature_list_]
+        Xt = []
+
+        for ftr in self.feature_list_:
+            x = df_whizz1[ftr].values + 1   # make 0s posiitve
+            if ftr == 'age_diff':           # make data positive, age_diff 
+                                            # contains negative points
+                x += 10
+            xt, _ = stats.boxcox(x)
+            Xt.append(xt)
+
+        self.data_bc_ = np.array(Xt).transpose()

@@ -311,6 +311,9 @@ class FeatureCM(object):
         df_features = self.feature.df_features_
         df_features1 = df_features[df_features['customer_month']==self.cmonth]
 
+        if df_features1.empty:
+            return pd.DataFrame(), pd.DataFrame()
+
         # Keep only pupils who do have the option on cancellation in next month
         last_access_date = df_features1.groupby(level=0).apply(
             lambda df: df.index.get_level_values(level=1).max())

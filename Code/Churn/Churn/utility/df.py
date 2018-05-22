@@ -266,7 +266,8 @@ def _assign_customer_month(df_subspt, df_datesFrame, configuration):
                                   row.subscription_end_date
     warnings.filterwarnings('default')
 
-    df_datesFrame.set_index(['pupilId', 'date']) # recover the index hierarchy
+    df_datesFrame.set_index(['pupilId', 'date'], inplace=True) # recover the 
+    #index hierarchy
 
     return df_datesFrame
 
@@ -286,13 +287,15 @@ def _generate_dates_frame(df_subspt, df_lesson, df_incomp, configuration):
     if not os.path.exists(fpath):
         os.makedirs(fpath)
 
+    df_datesFrame.reset_index().to_csv(fname, index=False)
+
     return df_datesFrame
 
 def _load_dates_frame(configuration):
     
     fname = configuration.DATA_FOLDER_PATH + configuration.FILE_INTERMEDIATE + \
         configuration.DATA_DATES
-    df_datesFrame = pd.read_csv(fname, delimiter=',', index_col=0)
+    df_datesFrame = pd.read_csv(fname, delimiter=',')
     
     # Convert date string into object
     date_format = configuration.CSV_DATE_FORMAT

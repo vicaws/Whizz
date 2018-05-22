@@ -293,7 +293,8 @@ def survival_customer_month(df_subspt, configuration):
 
 #region Features
 
-def feature_distribution(df_whizz, ftr_list, n_col, configuration, transform=True, ftr_list_nontransform=[]):
+def feature_distribution(df_whizz, ftr_list, n_col, configuration, 
+                         transform=True, ftr_list_nontransform=[]):
     n_ftr = len(ftr_list)
     n_row = n_ftr // n_col
     n_row +=  n_ftr % n_col
@@ -324,6 +325,25 @@ def feature_distribution(df_whizz, ftr_list, n_col, configuration, transform=Tru
     fname = configuration.PLOT_FOLDER + configuration.PLOT_FEATURE_DIST
     plt.tight_layout()
     plt.savefig(fname)
+
+def feature_correlation(df_features, size=10):
+    import scipy.cluster.hierarchy as sch
+
+    X = df_features.corr().values
+    d = sch.distance.pdist(X)       # vector of pairwise distances
+    L = sch.linkage(d, method='complete')
+    idx = sch.fcluster(L, 0.5*d.max(), 'distance')
+    columns = [df_features.columns.tolist()[i] for i in list(np.argsort(idx))]
+    df_features = df_features.reindex(columns, axis=1)
+
+    corr = df_features.corr()
+    fig, ax = plt.subplots(figsize=(size, size))
+    cax = ax.matshow(corr, cmap=sns.diverging_palette(250, 10, as_cmap=True))
+    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90);
+    plt.yticks(range(len(corr.columns)), corr.columns);
+    
+    # Add the colorbar legend
+    cbar = fig.colorbar(cax, ticks=[-1, 0, 1], aspect=40, shrink=.8)
 
 #endregion
 
