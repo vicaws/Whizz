@@ -31,7 +31,7 @@ class ResearchConfig(Config):
     RETURN_GAP = 5
     RETURN_GAP_UNIT = 'D'
 
-    MONTHLY_ONLY = True
+    MONTHLY_ONLY = False
 
     IGNORE_UNSTEADY_PERIOD = True
 
@@ -56,6 +56,42 @@ class ResearchConfig(Config):
     PLOT_SURVIVAL_CM = "survival_analysis_CM.png"
 
     PLOT_FEATURE_DIST = "feature_distribution.png"
+
+class ResearchConfig_MonAndAnn(Config):  
+    # Data
+    FILE_SUBFOLDER = "20180516/"
+    FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
+
+    # Study
+    CUTOFF_DATE = "2018-04-20"
+    RETURN_GAP = 5
+    RETURN_GAP_UNIT = 'D'
+
+    MONTHLY_ONLY = False
+
+    IGNORE_UNSTEADY_PERIOD = True
+
+    FEATURE_LIST = ['num_attempt', 'num_complete', 'num_incomplete',
+                    'usage', 'usage_complete', 'usage_incomplete']
+
+    HOLIDAY_MONTH = [1, 4, 5, 6, 9]
+
+    # Output
+    DATA_DESCR = "descriptive_stats.csv"
+    DATA_DATES = "dates_frame.csv"
+    DATA_USAGE = "usage.csv"
+
+    PLOT_SUBSPT_DIST = "subspt_dist.png"
+    PLOT_ACTIVE_SUBSPT = "active_subspt.png"
     
+    PLOT_PERM_UNIT = 'M'
+    PLOT_PERM_COUNT = "performance_count.png"
+    PLOT_PERM_RATIO = "performance_ratio.png"
+
+    PLOT_SURVIVAL = "survival_analysis.png"
+    PLOT_SURVIVAL_CM = "survival_analysis_CM.png"
+
+    PLOT_FEATURE_DIST = "feature_distribution.png"
+
 class TestConfig(Config):
     pass

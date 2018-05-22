@@ -256,7 +256,9 @@ def _assign_customer_month(df_subspt, df_datesFrame, configuration):
         elif row.subscription_type == configuration.TYPE_ANNUAL:
             cmonth = row.customer_month - 12 + \
                 np.ceil(( df_datesFrame.date-row.subscription_start_date)\
-                .dt.days/30)
+                .dt.days/31.) # divisor can only be 31, not 30 or smaller, 
+                             # otherwise it calculates a wrong customer number
+                             # for the end month for some annual subscriptions. 
             df_datesFrame.loc[criterion1 & criterion21 & criterion22, 
                               'customer_month'] = cmonth
         
