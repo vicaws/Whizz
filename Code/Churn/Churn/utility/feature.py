@@ -304,11 +304,13 @@ class FeatureCM(object):
         self.df_subspt = df_subspt
         self.config = configuration
 
-        self._df_features, self.df_whizz_ = self._initialise(print)
+        self._df_features, self.df_whizz_ = self._initialise(verbose)
     
     def _initialise(self, verbose):
         
         df_features = self.feature.df_features_
+        df_features = df_features[df_features['customer_month']>0]
+        self.feature.df_features_ = df_features
         
         # Identify and categorise pupils
         pupils_subspt, pupils_churnOption, pupils_active_churnOption, \
@@ -379,7 +381,7 @@ class FeatureCM(object):
         
         # Identify pupils who are now subscribing
         pupils_subspt = self.df_subspt[
-            self.df_subspt['customer_month']>self.cmonth]\
+            self.df_subspt['customer_month']>=self.cmonth]\
                 ['pupilId'].unique()
         pupils_subspt_ann = self.df_subspt[
             (self.df_subspt['customer_month']>=self.cmonth)&\
@@ -416,6 +418,10 @@ class FeatureCM(object):
                 format(pupils_active_churnOption.shape[0]))
             print("Number of inactive pupils with churn option = {}".\
                 format(pupils_inactive_churnOption.shape[0]))
+        
+        self.pupils_churnOption_ = pupils_churnOption
+        self.pupils_active_churnOption_ = pupils_active_churnOption
+        self.pupils_inactive_churnOption_ = pupils_inactive_churnOption
 
         return pupils_subspt, pupils_churnOption, \
             pupils_active_churnOption, pupils_inactive_churnOption
@@ -426,6 +432,7 @@ class FeatureCM(object):
         # history records in the current customer month
         if df_features1.empty:
             time_last_access = pd.Series()
+            subspt_end_date = pd.Series()
         else:
             last_access_date = df_features1.groupby(level=0).apply(
                 lambda df: df.index.get_level_values(level=1).max())
@@ -450,8 +457,9 @@ class FeatureCM(object):
         subspt_end_date_inactive = df_ed['subscription_end_date']
 
         if self.cmonth==1:
-            time_last_access_inactive = \
-                (subspt_end_date_inactive-subspt_start_date_inactive).dt.days
+            last_access_date_inactive = subspt_start_date_inactive
+            pupils_activePast = np.array([])
+            pupils_neverActive = pupils_inactive_churnOption
         else:
             # if the pupil has been active in the past, then find the latest 
             # active date in history
@@ -469,7 +477,7 @@ class FeatureCM(object):
             last_access_date_inactive = df_features[mask_inactive & mask_cm].\
                 groupby(level=0).apply(find_lastDate)
 
-            # If the pupil has neve been active in the past, then assign the 
+            # If the pupil has never been active in the past, then assign the 
             # subscription start date of the first ever subscription
             last_access_date_inactive.loc[last_access_date_inactive.isna()] = \
                 subspt_start_date_inactive
@@ -480,13 +488,18 @@ class FeatureCM(object):
                 subspt_start_date_inactive[pupils_neverActive]
             last_access_date_inactive = \
                 last_access_date_inactive.append(last_access_date_neverActive)
-
-            time_last_access_inactive = \
-                (subspt_end_date_inactive-last_access_date_inactive).dt.days
+        
+        time_last_access_inactive = \
+            (subspt_end_date_inactive-last_access_date_inactive).dt.days
+        
+        self.subspt_start_date_inactive_ = subspt_start_date_inactive
+        self.subspt_end_date_inactive_ = subspt_end_date_inactive
+        self.last_access_date_inactive_ = last_access_date_inactive
+        self.pupils_activePast_ = pupils_activePast
+        self.pupils_neverActive_ = pupils_neverActive
 
         return time_last_access.append(time_last_access_inactive), \
             subspt_end_date, subspt_end_date_inactive
-
 
     def add_usageTime(self):
         df_features1 = self._df_features
@@ -502,8 +515,14 @@ class FeatureCM(object):
 
         self.df_whizz_ = self.df_whizz_.assign(usage_complete=usage_complete,
                                                usage_incomplete=usage_incomplete,
-                                               usage=usage,
-                                               rate_incomplete_usage=\
+                                               usage=usage)
+        
+        # Fill 0s for inactive subscribers
+        self.df_whizz_.fillna(0.0, inplace=True)
+
+        # Note: leave NaN for inactive subscribers as the rate is not defined
+        # for them
+        self.df_whizz_ = self.df_whizz_.assign(rate_incomplete_usage=\
                                                    usage_incomplete/usage)
 
     def add_progress(self):
@@ -513,6 +532,8 @@ class FeatureCM(object):
 
         self.df_whizz_ = self.df_whizz_.assign(progress=progress,
                                                progress_delta=progress_delta)
+
+        # Fill for inactive subscribers
         
     def add_age(self):
         df_features1 = self._df_features
