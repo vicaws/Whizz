@@ -297,87 +297,197 @@ class FeatureCM(object):
 
     """
 
-    def __init__(self, feature, customer_month, df_subspt, configuration):
+    def __init__(self, feature, customer_month, df_subspt, 
+                 configuration, verbose=True):
         self.feature = feature
         self.cmonth = customer_month
         self.df_subspt = df_subspt
         self.config = configuration
 
-        self._df_features, self.df_whizz_ = self._initialise()
+        self._df_features, self.df_whizz_ = self._initialise(print)
     
-    def _initialise(self):
+    def _initialise(self, verbose):
+        
+        df_features = self.feature.df_features_
+        
+        # Identify and categorise pupils
+        pupils_subspt, pupils_churnOption, pupils_active_churnOption, \
+            pupils_inactive_churnOption = self._identify_pupils(verbose)
         
         # Abstract information of the studying customer month only
-        df_features = self.feature.df_features_
         df_features1 = df_features[df_features['customer_month']==self.cmonth]
-
-        if df_features1.empty:
-            return pd.DataFrame(), pd.DataFrame()
-
-        # Keep only pupils who do have the option on cancellation in next month
-        last_access_date = df_features1.groupby(level=0).apply(
-            lambda df: df.index.get_level_values(level=1).max())
-        subspt_end_date = df_features1.groupby(level=0)\
-            ['subscription_end_date'].last()
-        time_last_access = (subspt_end_date - last_access_date).dt.days
-
-        time_last_access = time_last_access[time_last_access<=31] # remove data
-        pupils_withOption = time_last_access.index.values
-
+        
+        # Keep only pupils who do have the option on churn in next month
+        # Note: this may result an empty data frame, which bascially indicates 
+        # that there is no active pupils who have churn option
         df_features1 = df_features1[
             df_features1.index.get_level_values(level=0).\
-                isin(pupils_withOption)]
-
+                isin(pupils_churnOption)]
+        
         # Construct the basic data frame
         num_complete = df_features1.groupby(level=0)['count_complete'].sum()
         num_incomplete = df_features1.groupby(level=0)['count_incomplete'].sum()
-
         df_whizz = pd.DataFrame({'num_complete': num_complete,
                                  'num_incomplete': num_incomplete,
                                  'num_attempt': num_complete+num_incomplete,
                                  'rate_incomplete_num': num_incomplete/\
                                      (num_complete+num_incomplete)
                                  })
+        
+        # Append inactive pupils - all fields are filled by 0
+        sr_pupils_inactive = pd.Series(pupils_inactive_churnOption, 
+                                       name='pupilId')
+        df_whizz_inactive = pd.DataFrame(0, index=sr_pupils_inactive, 
+                                         columns=df_whizz.columns)
+        df_whizz = df_whizz.append(df_whizz_inactive)
 
         # Identify churner and non-churner
-        pupils_nextMonth = self.df_subspt[
-            self.df_subspt['customer_month']==(self.cmonth+1)]\
-                ['pupilId'].unique()
-        pupils_nextAnnual = self.df_subspt[
-            self.df_subspt['customer_month']==(self.cmonth+12)]\
-                ['pupilId'].unique()
-        pupils_nextMonthRenew = np.union1d(pupils_nextMonth, pupils_nextAnnual)
+        pupils_renew = self.df_subspt[
+            self.df_subspt['customer_month']>self.cmonth]['pupilId'].unique()
+        pupils_churn = np.setdiff1d(pupils_subspt, pupils_renew)
+        df_whizz = df_whizz.assign(churn=0)
+        df_whizz.loc[df_whizz.index.isin(pupils_churn), 'churn'] = 1
 
-        pupils_thisMonth = self.df_subspt[
-            self.df_subspt['customer_month']==self.cmonth]['pupilId'].unique()
-        pupils_nextMonthCancel = np.setdiff1d(pupils_thisMonth, 
-                                              pupils_nextMonthRenew)
-
-        df_whizz = df_whizz.assign(churn= 0)
-        df_whizz.loc[df_whizz.index.isin(pupils_nextMonthCancel), 'churn'] = 1
-
-        # Add customer month label
-        df_whizz = df_whizz.assign(customer_month=self.cmonth)
-
-        # Add calendar month label
-        cal_month = df_features1.groupby(level=0).\
-            apply(lambda df: 
-                  df.index.get_level_values(level=1).max().month)
+        # Calculate time since last access
+        time_last_access, subspt_end_date, subspt_end_date_inactive = \
+            self._calc_last_access(df_features, df_features1, 
+                              pupils_inactive_churnOption)
+        df_whizz = df_whizz.assign(last_access=time_last_access)
         
-        df_whizz = df_whizz.assign(calendar_month=cal_month)
-
+        # Add active/inactive label
+        sr_active = pd.Series(1, index=pupils_active_churnOption)
+        sr_inactive = pd.Series(0, index=pupils_inactive_churnOption)
+        df_whizz = df_whizz.assign(active=sr_active.append(sr_inactive))
+        
+        # Add calendar month label
+        if df_features1.empty:
+            cal_month = pd.Series()
+        else:
+            cal_month = subspt_end_date.dt.month
+        cal_month_inactive = subspt_end_date_inactive.dt.month
+        df_whizz = df_whizz.assign(
+            calendar_month=cal_month.append(cal_month_inactive))
+    
         # Add holiday/term label
         df_whizz = df_whizz.assign(holiday=0)
         df_whizz.loc[
-            df_whizz['calendar_month'].isin(self.config.HOLIDAY_MONTH), 
-            'holiday'] = 1
-
-        # Add time since last access
-        df_whizz = df_whizz.assign(
-            last_access=time_last_access)
+            df_whizz['calendar_month'].isin(self.config.HOLIDAY_MONTH), 'holiday'] = 1
 
         return df_features1, df_whizz
     
+    def _identify_pupils(self, verbose):
+        
+        # Identify pupils who are now subscribing
+        pupils_subspt = self.df_subspt[
+            self.df_subspt['customer_month']>self.cmonth]\
+                ['pupilId'].unique()
+        pupils_subspt_ann = self.df_subspt[
+            (self.df_subspt['customer_month']>=self.cmonth)&\
+                (self.df_subspt['subscription_type']==self.config.TYPE_ANNUAL)]\
+                ['pupilId'].unique()
+
+        # Identify subscribed pupils who are active and inactive in the customer
+        # month. 'Active' means the pupils have records kept in lesson history.
+        df_features = self.feature.df_features_
+        df_features1 = df_features[df_features['customer_month']==self.cmonth]
+        pupils_active = df_features1.index.get_level_values(level=0).unique()
+        pupils_inactive = np.setdiff1d(pupils_subspt, pupils_active)
+
+        # Identify pupils with churn option
+        pupils_churnOption = self.df_subspt[
+            self.df_subspt['customer_month']==self.cmonth]\
+                ['pupilId'].unique()
+        pupils_active_churnOption = np.intersect1d(pupils_active, 
+                                                   pupils_churnOption)
+        pupils_inactive_churnOption = np.intersect1d(pupils_inactive,
+                                                     pupils_churnOption)
+
+        if verbose:
+            print("In customer month {}:".format(self.cmonth))
+            print("Number of subscribed pupils (Annual)        = {} ({})".\
+                format(pupils_subspt.shape[0], pupils_subspt_ann.shape[0]))
+            print("Number of active pupils                     = {}".\
+                format(pupils_active.shape[0]))
+            print("Number of inactive pupils                   = {}".\
+                format(pupils_inactive.shape[0]))
+            print("Number of pupils with churn option          = {}".\
+                format(pupils_churnOption.shape[0]))
+            print("Number of active pupils with churn option   = {}".\
+                format(pupils_active_churnOption.shape[0]))
+            print("Number of inactive pupils with churn option = {}".\
+                format(pupils_inactive_churnOption.shape[0]))
+
+        return pupils_subspt, pupils_churnOption, \
+            pupils_active_churnOption, pupils_inactive_churnOption
+
+    def _calc_last_access(self, df_features, df_features1, 
+                          pupils_inactive_churnOption):
+        # For active pupils, we can find time since last access from the lesson 
+        # history records in the current customer month
+        if df_features1.empty:
+            time_last_access = pd.Series()
+        else:
+            last_access_date = df_features1.groupby(level=0).apply(
+                lambda df: df.index.get_level_values(level=1).max())
+            subspt_end_date = df_features1.groupby(level=0)\
+                ['subscription_end_date'].last()
+            time_last_access = (subspt_end_date-last_access_date).dt.days
+
+        # For inactive pupils, we need to search lesson history records in all
+        # past customer months
+        df_sd = self.df_subspt[
+            (self.df_subspt['customer_month']==1)&\
+                (self.df_subspt['pupilId'].isin(pupils_inactive_churnOption))]\
+                [['pupilId','subscription_start_date']]
+        df_sd.set_index(['pupilId'], inplace=True)
+        subspt_start_date_inactive = df_sd['subscription_start_date']
+
+        df_ed = self.df_subspt[
+            (self.df_subspt['customer_month']==self.cmonth)&\
+                (self.df_subspt['pupilId'].isin(pupils_inactive_churnOption))]\
+                [['pupilId','subscription_end_date']]
+        df_ed.set_index(['pupilId'], inplace=True)
+        subspt_end_date_inactive = df_ed['subscription_end_date']
+
+        if self.cmonth==1:
+            time_last_access_inactive = \
+                (subspt_end_date_inactive-subspt_start_date_inactive).dt.days
+        else:
+            # if the pupil has been active in the past, then find the latest 
+            # active date in history
+            def find_lastDate(df):
+                pupilId = df.name
+                spt_end_date = subspt_end_date_inactive.loc[pupilId]
+                mask = df.index.get_level_values(level=1)<spt_end_date
+                last_date = df[mask].index.get_level_values(level=1).max()
+                return last_date
+            
+            mask_inactive = df_features.index.get_level_values(level=0).\
+                isin(pupils_inactive_churnOption)
+            mask_cm = df_features['customer_month']<self.cmonth
+
+            last_access_date_inactive = df_features[mask_inactive & mask_cm].\
+                groupby(level=0).apply(find_lastDate)
+
+            # If the pupil has neve been active in the past, then assign the 
+            # subscription start date of the first ever subscription
+            last_access_date_inactive.loc[last_access_date_inactive.isna()] = \
+                subspt_start_date_inactive
+            pupils_activePast = last_access_date_inactive.index.unique().values
+            pupils_neverActive = np.setdiff1d(pupils_inactive_churnOption, 
+                                              pupils_activePast)
+            last_access_date_neverActive = \
+                subspt_start_date_inactive[pupils_neverActive]
+            last_access_date_inactive = \
+                last_access_date_inactive.append(last_access_date_neverActive)
+
+            time_last_access_inactive = \
+                (subspt_end_date_inactive-last_access_date_inactive).dt.days
+
+        return time_last_access.append(time_last_access_inactive), \
+            subspt_end_date, subspt_end_date_inactive
+
+
     def add_usageTime(self):
         df_features1 = self._df_features
         time_taken = df_features1.time_taken_complete + \

@@ -255,10 +255,14 @@ def _assign_customer_month(df_subspt, df_datesFrame, configuration):
                               'customer_month'] = row.customer_month
         elif row.subscription_type == configuration.TYPE_ANNUAL:
             cmonth = row.customer_month - 12 + \
-                np.ceil(( df_datesFrame.date-row.subscription_start_date)\
-                .dt.days/31.) # divisor can only be 31, not 30 or smaller, 
-                             # otherwise it calculates a wrong customer number
-                             # for the end month for some annual subscriptions. 
+                np.ceil((( df_datesFrame.date-row.subscription_start_date)\
+                .dt.days+1)/31.) 
+            # Note 1: divisor can only be 31, not 30 or smaller, otherwise it 
+            # calculates a wrong customer number for the end month for some 
+            # annual subscriptions.
+            # Note 2: need plus 1 to consider the case when date equals to the
+            # subscription start date.
+             
             df_datesFrame.loc[criterion1 & criterion21 & criterion22, 
                               'customer_month'] = cmonth
         
