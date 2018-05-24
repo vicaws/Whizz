@@ -8,7 +8,7 @@ class Config:
     CSV_DATE_FORMAT = "%Y-%m-%d"
     
     FILE_SUBSCRIPTION = "subscriptions_table.csv"
-    FILE_LH_COMPLETE = "homesubs_lh.csv"
+    FILE_LH_COMPLETE = "homesubs_lh*.csv"
     FILE_LH_INCOMPLETE = "homesubs_incomplete_lh.csv"
     FILE_CURRICULUM = "curriculum_number_of_lessons.csv"
     FILE_PUPILS = "pupils.csv"
@@ -59,7 +59,7 @@ class ResearchConfig(Config):
 
 class ResearchConfig_MonAndAnn(Config):  
     # Data
-    FILE_SUBFOLDER = "20180516/"
+    FILE_SUBFOLDER = "20180524/"
     FILE_INTERMEDIATE = FILE_SUBFOLDER + "Intermediate/"
 
     # Study

@@ -526,6 +526,7 @@ class FeatureCM(object):
                                                    usage_incomplete/usage)
 
     def add_progress(self):
+        df_features = self.feature.df_features_
         df_features1 = self._df_features
         progress_delta = df_features1.groupby(level=0)['progressions_delta'].sum()
         progress = df_features1.groupby(level=0)['progressions'].max()
@@ -533,7 +534,38 @@ class FeatureCM(object):
         self.df_whizz_ = self.df_whizz_.assign(progress=progress,
                                                progress_delta=progress_delta)
 
-        # Fill for inactive subscribers
+        # Fill progress_delta for inactive subscribers
+        self.df_whizz_.loc[:, 'progress_delta'] = \
+            self.df_whizz_['progress_delta'].fillna(0.0)
+
+        # Fill progress for inactive subscribers. We need to search lesson 
+        # history records in all past customer month
+        if self.cmonth == 1:
+            self.df_whizz_.loc[:,'progress'] = \
+                self.df_whizz_['progress'].fillna(0.0)
+        else:
+            # Fill for never active pupils 
+            self.df_whizz_.loc[
+                self.df_whizz_.index.isin(self.pupils_neverActive_), 
+                'progress'] = 0
+
+            # Fill for pupils who have been active in the past
+            def find_lastProgress(df):
+                pupilId = df.name
+                last_date = self.last_access_date_inactive_.loc[pupilId]
+                progress = df.iloc[:].loc[
+                    df.index.get_level_values(level=1)==last_date, 
+                    'progressions']
+                return progress.values[0]
+
+            mask = df_features.index.get_level_values(level=0).\
+                isin(self.pupils_activePast_)
+            progress_activePast = df_features[mask].groupby(level=0).\
+                apply(find_lastProgress)
+
+            self.df_whizz_.loc[
+                self.df_whizz_.index.isin(self.pupils_activePast_), 
+                'progress'] = progress_activePast
         
     def add_age(self):
         df_features1 = self._df_features

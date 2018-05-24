@@ -1,4 +1,6 @@
 import warnings
+
+import glob
 import pandas as pd
 
 def _generate_lesson_key(df):
@@ -24,7 +26,15 @@ def retrieve_data(configuration):
     fname_subspt = fpath + fpathchar + configuration.FILE_SUBSCRIPTION
     fname_pupils = fpath + fpathchar + configuration.FILE_PUPILS
 
-    df_lesson = pd.read_csv(fname_lesson, delimiter=',')
+    # There are possibly multiple files for complete lesson history
+    fnames = glob.glob(fname_lesson)
+    dfs = []
+    for fname in fnames:
+        dfs.append(pd.read_csv(fname, delimiter=','))
+    df_lesson = dfs[0]
+    for i in range(1, len(dfs)):
+        df_lesson = df_lesson.append(dfs[i], ignore_index=True)
+    
     df_incomp = pd.read_csv(fname_incomp, delimiter=',')
     df_crclum = pd.read_csv(fname_crclum, delimiter=',')
     df_subspt = pd.read_csv(fname_subspt, delimiter=',')
