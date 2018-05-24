@@ -297,11 +297,13 @@ class FeatureCM(object):
 
     """
 
-    def __init__(self, feature, customer_month, df_subspt, 
+    def __init__(self, feature, customer_month, 
+                 df_subspt, df_pupils,
                  configuration, verbose=True):
         self.feature = feature
         self.cmonth = customer_month
         self.df_subspt = df_subspt
+        self.df_pupils = df_pupils
         self.config = configuration
 
         self._df_features, self.df_whizz_ = self._initialise(verbose)
@@ -492,11 +494,13 @@ class FeatureCM(object):
         time_last_access_inactive = \
             (subspt_end_date_inactive-last_access_date_inactive).dt.days
         
+        # Add class members
         self.subspt_start_date_inactive_ = subspt_start_date_inactive
         self.subspt_end_date_inactive_ = subspt_end_date_inactive
         self.last_access_date_inactive_ = last_access_date_inactive
         self.pupils_activePast_ = pupils_activePast
         self.pupils_neverActive_ = pupils_neverActive
+        self.subspt_end_date_active_ = subspt_end_date
 
         return time_last_access.append(time_last_access_inactive), \
             subspt_end_date, subspt_end_date_inactive
@@ -568,8 +572,11 @@ class FeatureCM(object):
                 'progress'] = progress_activePast
         
     def add_age(self):
-        df_features1 = self._df_features
-        age = df_features1.groupby(level=0)['age'].mean()
+        subspt_end_date = self.subspt_end_date_active_.\
+            append(self.subspt_end_date_inactive_)
+        pupils = self.pupils_churnOption_
+        dob = self.df_pupils[self.df_pupils.index.isin(pupils)]['dob']
+        age = (subspt_end_date - dob).dt.days / 365.
 
         self.df_whizz_ = self.df_whizz_.assign(age=age)
 
@@ -583,17 +590,26 @@ class FeatureCM(object):
         num_back = df_features1.groupby(level=0)['num_back'].sum()
         num_pass = df_features1.groupby(level=0)['num_pass'].sum()
         num_fail = df_features1.groupby(level=0)['num_fwrd'].sum()
+        num_stat = df_features1.groupby(level=0)['num_stat'].sum()
+
+        self.df_whizz_ = self.df_whizz_.assign(
+            num_pass=num_pass+num_fwrd,
+            num_fail=num_fail+num_stat+num_back,
+            num_replay=num_replay)
+
+        # Fill for inactive subscribers
+        self.df_whizz_.loc[:, ['num_pass','num_fail','num_replay']] = \
+            self.df_whizz_[['num_pass','num_fail','num_replay']].fillna(0)
 
         rate_assess = num_assess / num_attempt
         rate_pass = (num_pass+num_fwrd) / num_assess
-        rate_fail = (num_fail+num_back) / num_assess
+        rate_fail = (num_fail+num_back+num_stat) / num_assess
         rate_fwrd = num_fwrd / num_assess
         rate_back = num_back / num_assess
-
-        self.df_whizz_ = self.df_whizz_.assign(num_pass=num_pass,
-                                               num_fail=num_fail,
-                                               num_replay=num_replay,
-                                               rate_assess=rate_assess,
+        
+        # The rate calculation will lead to NaN in the data frame due to 0 
+        # denominator
+        self.df_whizz_ = self.df_whizz_.assign(rate_assess=rate_assess,
                                                rate_pass=rate_pass,
                                                rate_fail=rate_fail,
                                                rate_fwrd=rate_fwrd,
