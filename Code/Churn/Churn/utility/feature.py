@@ -191,47 +191,31 @@ class Feature(object):
         print('+ Add feature: outcome.')
         self.df_features_ = df_features1
 
-    def add_score(self, df_lesson, df_incomp):
-        '''Add scores achieved and the total number of questions to feature data
-        frame. Note that each question has a score of 1, so that the number of 
-        questions equal full marks.
+    def add_mark(self, df_lesson, df_incomp):
+        '''Add marks achieved and the total number of questions to feature data
+        frame.
         '''
-
-        df_lesson_daily = df_lesson.groupby(['pupilId', 'date'])\
-            [['score','totalQuestions']].sum()
-        df_lesson_daily.rename(
-            columns={'score':'score_complete', 
-                     'totalQuestions':'question_complete'}, inplace=True)
+        
+        mark_lesson = df_lesson.groupby(['pupilId', 'date'])['mark'].mean()
+        mark_lesson.rename('mark_complete', inplace=True)
         
         # For incomplete lesson history records, each row records one attempt
         # and all attempts on one lesson share the same ID. Therefore, we should 
-        # only consider the last attempt (where score and the number of questions
-        # are highest).
+        # only consider the last attempt (where mark is highest).
         df_incomp_combineAttempts = df_incomp.\
             groupby('incomplete_lesson_log_id')\
-            [['pupilId', 'date', 'score','total_questions']].max()
+            [['pupilId', 'date', 'mark']].max()
         df_incomp_combineAttempts.reset_index(inplace=True)
-        df_incomp_daily = df_incomp_combineAttempts.groupby(['pupilId', 'date'])\
-            [['score','total_questions']].sum()
-        df_incomp_daily.rename(
-            columns={'score':'score_incomplete', 
-                     'total_questions':'question_incomplete'}, inplace=True)
+        mark_incomp = df_incomp_combineAttempts.groupby(['pupilId', 'date'])\
+            ['mark'].mean()
+        mark_incomp.rename('mark_incomplete', inplace=True)
 
-        df = pd.concat([df_lesson_daily, df_incomp_daily], axis=1)
-        
-        # Fill NaN
-        df.fillna(0.0, inplace=True)
-        
-        df['score'] = df.score_complete + df.score_incomplete
-        df['num_questions'] = df.question_complete + df.question_incomplete
-        df.drop(columns=['score_complete', 'score_incomplete', 
-                         'question_complete', 'question_incomplete'], 
-                inplace=True)
+        df_mark = pd.concat([mark_lesson, mark_incomp], axis=1)
 
         # Append to feature data frame
-        df_features1 = pd.concat([self.df_features_, df], axis=1)
+        df_features1 = pd.concat([self.df_features_, df_mark], axis=1)
 
-        print('+ Add feature: score.')
+        print('+ Add feature: mark.')
         self.df_features_ = df_features1
 
     def add_hardship(self, df_lesson, df_incomp):
@@ -732,13 +716,14 @@ class FeatureCM(object):
                                                rate_fwrd=rate_fwrd,
                                                rate_back=rate_back)
 
-    def add_score(self):
+    def add_mark(self):
         df_features1 = self._df_features
 
-        score = df_features1.groupby(level=0)['score'].sum()
-        num_questions = df_features1.groupby(level=0)['num_questions'].sum()
-
-        self.df_whizz_ = self.df_whizz_.assign(score=score/num_questions)
+        df_mark = df_features1.groupby(level=0)[['mark_complete', 'mark_incomplete']].mean()
+        
+        # Note: leave NaN for inactive subscribers as the rate is not defined
+        # for them
+        self.df_whizz_ = pd.concat([self.df_whizz_, df_mark], axis=1)
 
     def add_hardship(self):
         df_features1 = self._df_features

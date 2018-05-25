@@ -66,7 +66,7 @@ class DataEngine(object):
         feature.add_age(self._df_pupils)
         feature.add_mathAge(self._df_lesson, self._df_incomp)
         feature.add_outcome(self._df_lesson)
-        feature.add_score(self._df_lesson, self._df_incomp)
+        feature.add_mark(self._df_lesson, self._df_incomp)
         feature.add_hardship(self._df_lesson)
 
         self.feature_ = feature
