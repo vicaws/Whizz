@@ -42,11 +42,14 @@ class Feature(object):
         frame.
     
     add_hardship:
-        Add measures of hardship to feature data frame. Two measures are
-        included: stack depth and number of helps. 3 columns are added:
-        (1) ave_stackDepth
-        (2) ave_help
-        (3) sum_help
+        Add measures of hardship to feature data frame. The hardship is measured
+        in terms of attempts, helps and time used in different stack depths. The 
+        stack depth is binned to 3 levels: 0(stackDepth=0), 1(stackDepth=1) and 
+        2(stackDepth>1). 9 columns are added:
+        (1)-(3) num_sd0, num_sd1, num_sd2: attempts in different stack depths;
+        (4)-(6) help_sd0, help_sd1, help_sd2: helps in different stack depths;
+        (7)-(9) usage_sd0, usage_sd1, usage_sd2: time in different stack depths
+
     """
 
     def __init__(self, df_features):
@@ -231,33 +234,70 @@ class Feature(object):
         print('+ Add feature: score.')
         self.df_features_ = df_features1
 
-    def add_hardship(self, df_lesson):
-        '''Add measures of hardship to feature data frame. Two measures are
-        included: stack depth and number of helps.
+    def add_hardship(self, df_lesson, df_incomp):
+        '''Add measures of hardship to feature data frame. The hardship is 
+        measured in terms of attempts, helps and time used in different stack 
+        depths. The stack depth is binned to 3 levels: 0(stackDepth=0), 
+        1(stackDepth=1) and 2(stackDepth>1).
         '''
         
-        # Stack Depth: 'replay' has stackDepth = 0
-        df_lesson_sd = df_lesson[df_lesson['lesson_type']!='replay']
-        sum_stackDepth = df_lesson_sd.groupby(['pupilId', 'date'])\
-            ['stackDepth'].sum()
-        sum_stackDepth.rename('sum_stackDepth', inplace=True)
-        count_stackDepth = df_lesson_sd.groupby(['pupilId', 'date'])\
-            ['stackDepth'].count()
-        count_stackDepth.rename('count_stackDepth', inplace=True)
+        def bin_stackDepth(df, incomplete_table):
+            '''One-hot-encoding on the stackDepth
+            '''
+            s0 = df['stackDepth']==0
+            s1 = df['stackDepth']==1
+            s2 = df['stackDepth']>1
+            s0.replace({True:1, False:0}, inplace=True)
+            s1.replace({True:1, False:0}, inplace=True)
+            s2.replace({True:1, False:0}, inplace=True)
+            if not incomplete_table:
+                num_sd0 = s0
+                num_sd1 = s1
+                num_sd2 = s2
+            else:
+                num_sd0 = s0 * df['count']
+                num_sd1 = s1 * df['count']
+                num_sd2 = s2 * df['count']
+    
+            help_sd0 = s0*df['total_help']
+            help_sd1 = s1*df['total_help']
+            help_sd2 = s2*df['total_help']
+    
+            col_usage = 'time_taken_incomplete' if incomplete_table \
+                else 'time_taken_complete'
+            usage_sd0 = s0*df[col_usage]
+            usage_sd1 = s1*df[col_usage]
+            usage_sd2 = s2*df[col_usage]
 
-        # Help: 'tutor_pb' has total_help=0
-        df_lesson_hp = df_lesson[df_lesson['lesson_type']!='tutor_pb']
-        sum_help = df_lesson_hp.groupby(['pupilId', 'date'])['total_help'].sum()
-        sum_help.rename('sum_help', inplace=True)
-        count_help = df_lesson_hp.groupby(['pupilId', 'date'])\
-            ['stackDepth'].count()
-        count_help.rename('count_help', inplace=True)
+            df = df.assign(num_sd0=num_sd0, num_sd1=num_sd1, num_sd2=num_sd2,
+                           help_sd0=help_sd0, help_sd1=help_sd1, 
+                           help_sd2=help_sd2, usage_sd0=usage_sd0, 
+                           usage_sd1=usage_sd1, usage_sd2=usage_sd2)
 
-        df_hard = pd.concat(
-            [sum_stackDepth, count_stackDepth, sum_help, count_help], axis=1)
+            return df.groupby(['pupilId','date'])\
+                [['num_sd0', 'num_sd1', 'num_sd2',
+                  'help_sd0', 'help_sd1', 'help_sd2',
+                  'usage_sd0', 'usage_sd1', 'usage_sd2']].sum()
         
+        # Construct the binned stackDepth data frame from the complete 
+        # lesson table
+        print('Start binning stackDepth for complete lesson table.')
+        df_lesson_stackDepth = bin_stackDepth(df_lesson, incomplete_table=False)
+
+        # Construct the binned stackDepth data frame from the complete 
+        # lesson table
+        print('Start binning stackDepth for incomplete lesson table.')
+        df_incomp_stackDepth = self._infer_stackDepth_incomp(df_lesson, 
+                                                             df_incomp)
+        df_incomp_stackDepth = bin_stackDepth(df_incomp_stackDepth, 
+                                              incomplete_table=True)
+
+        # Combine the binned stackDepth data frames
+        df_stackDepth = df_lesson_stackDepth.add(df_incomp_stackDepth, 
+                                                 fill_value=0)
+
         # Append to feature data frame
-        df_features1 = pd.concat([self.df_features_, df_hard], axis=1)
+        df_features1 = pd.concat([self.df_features_, df_stackDepth], axis=1)
 
         # Fill NaN
         df_features1.fillna(0.0, inplace=True)
@@ -283,6 +323,77 @@ class Feature(object):
 
         print('+ Add feature: math age.')
         self.df_features_ = df_features1
+
+    def _infer_stackDepth_incomp(self, df_lesson, df_incomp):
+        
+        # Group stackDepth values 2 and 3
+        temp = df_lesson.replace({'stackDepth': {3:2}})
+        # Get from complete lesson table the last valid day of the same 
+        # stackDepth
+        df_sd_lastDate = temp.groupby(['pupilId', 'lesson_key', 'stackDepth'])\
+            ['date'].max()
+        df_sd_lastDate = df_sd_lastDate.reset_index(level='stackDepth')
+        # Add a new column date_temp with values 0 for following calculations
+        df_sd_lastDate = df_sd_lastDate.assign(date_temp=pd.to_timedelta(0))
+
+        # Add a new column count with value 1 for following calculations of 
+        # count of attempts
+        temp = df_incomp.assign(count=1)
+        # Aggregate incomplete lesson records at daily level
+        df_incomp_dailySum = temp.groupby(['pupilId', 'lesson_key', 'date'])\
+            [['time_taken_incomplete', 'total_help', 'count']].sum()
+        df_incomp_dailySum.reset_index(level='date', inplace=True)
+        # Add a new column date_temp with values 0 for following calculations
+        df_incomp_dailySum = df_incomp_dailySum.assign(
+            date_temp=df_incomp_dailySum.date, stackDepth=0)
+
+        # Calculate indicator data frame
+        # In the indicater data frame, the indicater is the column 'date'. 
+        # Because for one attempt in the incomplete lesson table, 'date' is 
+        # calculated as the date of that attempt minus the last valid date of a 
+        # stackDepth value of the corresponding attempt in the complete lesson 
+        # table. Hence, if 'date' > 0, then the stackDepth of that incomplete 
+        # attempt should be 'stackDepth'+1 
+        df1 = df_sd_lastDate[['date', 'date_temp', 'stackDepth']]
+        df2 = df_incomp_dailySum[['date', 'date_temp', 'stackDepth']]
+        df_indicator = df2-df1 
+
+        # Keep only those that not NaN. NaN appears when the lesson key is not 
+        # present in both complete and incomplete lesson tables
+        df_indicator = df_indicator.dropna()
+        df_indicator.reset_index(inplace=True)
+        df_indicator.loc[:, 'stackDepth'] = -df_indicator['stackDepth']
+
+        # Keep only records with 'date' <= 0
+        df_indicator = df_indicator[df_indicator['date']<=pd.to_timedelta(0)]
+
+        # For the case where there are multiple 'date' values for the same 
+        # lesson and date of attempt, take the maximum. For example, choose -29 
+        # if we have -29 and -143. This means to keep the one whose date is 
+        # closest to last valid date of a stackDepth value of the corresponding 
+        # attempt in the complete lesson table.
+        df_indicator = df_indicator.loc[
+            df_indicator.groupby(['pupilId','lesson_key','date_temp'])['date'].\
+                idxmax()]
+        df_indicator.drop(columns='date', inplace=True)
+        df_indicator.rename(columns={'date_temp':'date'}, inplace=True)
+        df_indicator.set_index(['pupilId', 'lesson_key', 'date'], inplace=True)
+
+        # Remove temporary columns which were created for previous calculations
+        df_incomp_dailySum.drop(columns=['date_temp', 'stackDepth'], 
+                                inplace=True)
+        df_incomp_dailySum.set_index(['date'], append=True, inplace=True)
+
+        df_incomp_stackDepth = pd.concat([df_incomp_dailySum, df_indicator], 
+                                         axis=1)
+        # Fill NaN for the stackDepth column by 0
+        # The stackDepth is NaN only when there is no corresponding attempt in 
+        # the complete lesson table.
+        df_incomp_stackDepth.loc[:, 'stackDepth'] = \
+            df_incomp_stackDepth['stackDepth'].fillna(0)
+        df_incomp_stackDepth.reset_index(inplace=True)
+
+        return df_incomp_stackDepth
 
 
 class FeatureCM(object):
@@ -592,9 +703,14 @@ class FeatureCM(object):
         num_fail = df_features1.groupby(level=0)['num_fwrd'].sum()
         num_stat = df_features1.groupby(level=0)['num_stat'].sum()
 
+        assess = num_assess>0
+        assess.replace({True:1, False:0}, inplace=True)
+
         self.df_whizz_ = self.df_whizz_.assign(
             num_pass=num_pass+num_fwrd,
             num_fail=num_fail+num_stat+num_back,
+            assess=assess,
+            num_assess = num_assess,
             num_replay=num_replay)
 
         # Fill for inactive subscribers
