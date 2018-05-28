@@ -39,8 +39,9 @@ class DataEngine(object):
         Prepare data for selected features.
     """
 
-    def __init__(self, df_subspt, df_datesFrame, df_lesson, df_incomp, df_pupils, 
-                configuration):
+    def __init__(self, 
+                 df_subspt, df_datesFrame, df_lesson, df_incomp, df_pupils, 
+                 configuration):
         self._df_subspt = df_subspt
         self._df_datesFrame = df_datesFrame
         self._df_lesson = df_lesson
@@ -64,10 +65,10 @@ class DataEngine(object):
         feature.add_usageTime(self._df_lesson, self._df_incomp)
         feature.add_progressions(self._df_lesson)
         feature.add_age(self._df_pupils)
-        feature.add_mathAge(self._df_lesson, self._df_incomp)
+        #feature.add_mathAge(self._df_lesson, self._df_incomp)
         feature.add_outcome(self._df_lesson)
+        feature.add_hardship(self._df_lesson, self._df_incomp)
         feature.add_mark(self._df_lesson, self._df_incomp)
-        feature.add_hardship(self._df_lesson)
 
         self.feature_ = feature
 
@@ -85,8 +86,10 @@ class DataEngine(object):
         # Aggregate over specified customer months
         print("Aggregate data over customer months.")
         for cmonth in tqdm(customer_month_list):
-            ftrCM = FeatureCM(self.feature_, cmonth, self._df_subspt, 
-                              self.config)
+            ftrCM = FeatureCM(self.feature_, cmonth, 
+                              self._df_subspt, self._df_pupils, 
+                              self.config,
+                              verbose=False)
 
             if ftrCM.df_whizz_.empty:
                 continue
@@ -95,9 +98,9 @@ class DataEngine(object):
             ftrCM.add_progress()
             ftrCM.add_age()
             ftrCM.add_outcome()
-            ftrCM.add_score()
             ftrCM.add_hardship()
-            ftrCM.add_mathAge()
+            ftrCM.add_mark()
+            #ftrCM.add_mathAge()
     
             df = ftrCM.df_whizz_
             df_whizz = pd.concat([df_whizz, df], axis=0)

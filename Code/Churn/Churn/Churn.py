@@ -39,7 +39,7 @@ def test():
     df_datesFrame.fillna(0, inplace=True)
 
     data_engine = DataEngine(df_subspt1, df_datesFrame, df_lesson1, df_incomp1, df_pupils, cfg)
-    data_engine.aggregate_features([42])
+    data_engine.aggregate_features([12])
 
     ftr_list = ['usage', 'usage_complete', 'usage_incomplete', 'rate_incomplete_usage',
                 'last_access', 

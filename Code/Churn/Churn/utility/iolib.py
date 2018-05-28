@@ -12,6 +12,13 @@ def _generate_lesson_key(df):
     
     return df
 
+def _fix_bug(df_subspt):
+    df_subspt.loc[df_subspt['pupilId']==983096, 'subscription_end_date'] = \
+        pd.to_datetime('2016-12-07')
+
+    df_subspt.loc[df_subspt['pupilId']==1077142, 'subscription_end_date'] = \
+        pd.to_datetime('2016-08-11')
+
 def retrieve_data(configuration):
     '''Load data from CSV files and pre-process data
     '''
@@ -108,5 +115,7 @@ def retrieve_data(configuration):
     df_pupils.set_index(['pupilId'], inplace=True)
 
     warnings.filterwarnings('default')
+
+    _fix_bug(df_subspt)
 
     return df_subspt, df_lesson, df_incomp, df_crclum, df_pupils
