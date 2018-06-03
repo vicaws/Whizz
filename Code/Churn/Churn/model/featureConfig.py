@@ -13,6 +13,27 @@ class FeatureAttribute(object):
     shiftPost = 0.
     distributionList = []
 
+class FeatureConfig_G1(object):
+    """Feature configuration for Group 1.
+    """
+
+    def __init__(self):
+        pass
+        
+class FeatureConfig_G2(object):
+    """Feature configuration for Group 2.
+    """
+
+    def __init__(self):
+
+        self.rate_incomplete_num = FeatureAttribute()
+        self.rate_incomplete_num.name = 'rate_incomplete_num'
+        self.rate_incomplete_num.shiftPre = 1.
+        self.rate_incomplete_num.bcTransform = True
+        self.rate_incomplete_num.distributionList = [UniformDistribution(0,10),
+                                                     UniformDistribution(90, 100),
+                                                     NormalDistribution(50, 20)]
+
 class FeatureConfig_G3(object):
     """Feature configuration for Group 3.
     """

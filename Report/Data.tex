@@ -1,0 +1,37 @@
+\section{Data Description and Pre-processing}
+
+We denote the feature data by a matrix $\mathbf{X} = (x_{ij}) \in \mathbb{R}^{m \times n}$, which describes $n$ observed values for each of the $m$ features. In addition, we denote the $i$-th row of $\mathbf{X}$ by $\mathbf{x}_{i,\text{R}} = [x_{i1} ~x_{i2} ~\cdots ~x_{in}]$, and the $j$-th column by $\mathbf{x}_j = [x_{1j} ~x_{2j} ~\cdots ~x_{mj}]^\top$.
+
+\subsection{Data Transformation}
+
+In general, learning algorithms benefit from standardisation of the data set. We have employed 3 transformations in sequence to make our data more suitable for mixture model learning task. The transformations are performed for each feature separately, resulting in different sets of transformation parameters for different features. To be specific, for $i$-th feature we describe the transformations as following.
+
+\begin{itemize}
+\item Linear transformation
+\\The linear transformation is applied either to ensure all data to be positive for eligibility of applying the following power transformation, or to adapt to distributional modelling choice. It has the format:
+\begin{equation}
+\mathbf{x}_{i,\text{R}}' = a_i \mathbf{1} + b_i \mathbf{x}_{i,\text{R}},
+\end{equation}
+where $a_i$ and $b_i$ are constants and $\mathbf{1} \in \mathbb{R}^{1 \times n}$ is the row vector of all ones.
+\item Box-Cox power transformation
+\\The Box-Cox power transformation is used to modify the distributional shape of a set of data to be more normally distributed so that tests and confidence limits that require normality can be appropriately used. It has the format:
+\begin{equation}
+x_{ij}' = 
+\begin{cases}
+\frac{x_{ij}^{\lambda_i}-1}{\lambda_i} & \text{if } \lambda_i \neq 0, \\
+\ln{x_{ij}} & \text{if } \lambda_i = 0,
+\end{cases}
+\end{equation}
+for $j = 1, ~2, ~\dots, m$. In Box-Cox transformation, $\lambda_i$ is estimated by maximizing the likelihood function [reference].
+\item Standardisation
+\\We standardise data for different features by scaling them into the same range to ensure the robustness to very small standard deviations of features. We choose to scale all features into range $[1, 100]$. If we denote the maximum and minimum values of observed feature $i$ as $x_i^\text{max}$ and $x_i^\text{min}$ respectively, then the standardisation is a linear transformation such that,
+\begin{equation}
+\mathbf{x}_{i,\text{R}}' = \mathbf{1} + \frac{100-1}{x_i^\text{max}-x_i^\text{min}} \left( \mathbf{x}_{i,\text{R}} - x_i^\text{min} \mathbf{1} \right).
+\end{equation}
+\end{itemize}
+
+
+
+\paragraph{Table of transformation parameters}
+
+\paragraph{Exhibitions of pre and post transformation}
