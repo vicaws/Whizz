@@ -305,7 +305,7 @@ def feature_distribution(df_whizz, ftr_list, n_col, configuration,
     fig = plt.figure(figsize=(4*n_col, 2*n_row))
     for i, ftr in enumerate(ftr_list):
         ax = fig.add_subplot(n_row, n_col, pos[i])
-        x = df_whizz[ftr].values
+        x = df_whizz[ftr].dropna().values # drop NaN for plotting
     
         if (ftr in ftr_list_nontransform) or (not transform):
             sns.distplot(x)

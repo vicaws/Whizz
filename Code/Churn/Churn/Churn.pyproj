@@ -24,6 +24,9 @@
   <ItemGroup>
     <Compile Include="Churn.py" />
     <Compile Include="config.py" />
+    <Compile Include="model\featureConfig.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="model\dataEngine.py">
       <SubType>Code</SubType>
     </Compile>

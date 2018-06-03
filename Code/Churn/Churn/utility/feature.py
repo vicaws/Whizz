@@ -427,9 +427,7 @@ class FeatureCM(object):
         num_incomplete = df_features1.groupby(level=0)['count_incomplete'].sum()
         df_whizz = pd.DataFrame({'num_complete': num_complete,
                                  'num_incomplete': num_incomplete,
-                                 'num_attempt': num_complete+num_incomplete,
-                                 'rate_incomplete_num': num_incomplete/\
-                                     (num_complete+num_incomplete)
+                                 'num_attempt': num_complete+num_incomplete
                                  })
         
         # Append inactive pupils - all fields are filled by 0
@@ -438,6 +436,10 @@ class FeatureCM(object):
         df_whizz_inactive = pd.DataFrame(0, index=sr_pupils_inactive, 
                                          columns=df_whizz.columns)
         df_whizz = df_whizz.append(df_whizz_inactive)
+
+        # Add percentage of incomplete attempts - can result in NaN
+        df_whizz = df_whizz.assign(rate_incomplete_num=num_incomplete/\
+                                     (num_complete+num_incomplete))
 
         # Add customer month label
         df_whizz = df_whizz.assign(customer_month=self.cmonth)
@@ -709,10 +711,16 @@ class FeatureCM(object):
             num_replay=num_replay)
 
         # Fill for inactive subscribers
-        self.df_whizz_.loc[:, ['num_pass','num_fail','num_replay',
-                               'num_assess','assess']] = \
-            self.df_whizz_[['num_pass','num_fail','num_replay',
-                            'num_assess','assess']].fillna(0)
+        if self.config.FILL_NAN_BY_ZERO:
+            self.df_whizz_.loc[:, ['num_pass','num_fail','num_replay',
+                                   'num_assess','assess']] = \
+                self.df_whizz_[['num_pass','num_fail','num_replay',
+                                'num_assess','assess']].fillna(0)
+        else:
+            # num_pass, num_fail is NA if there is no assessment at all
+            # so leave them as NaN
+            self.df_whizz_.loc[:, ['num_replay','num_assess','assess']] = \
+                self.df_whizz_[['num_replay','num_assess','assess']].fillna(0)
 
         rate_assess = num_assess / num_attempt
         rate_pass = (num_pass+num_fwrd) / num_assess
@@ -728,6 +736,12 @@ class FeatureCM(object):
                                                rate_fwrd=rate_fwrd,
                                                rate_back=rate_back)
 
+        # NaN check - if there is no assessment at all, then all outcome shall 
+        # be NaN
+        if not self.config.FILL_NAN_BY_ZERO:
+            self.df_whizz_.loc[self.df_whizz_['assess']==0, 
+                               ['num_pass', 'num_fail']] = np.nan
+
     def add_mark(self):
         df_features1 = self._df_features
 
@@ -737,8 +751,19 @@ class FeatureCM(object):
         self.df_whizz_ = pd.concat([self.df_whizz_, df_mark], axis=1)
 
         # Fill NaN for inactive subscribers
-        self.df_whizz_.loc[:, ['mark_complete', 'mark_incomplete']] = \
-            self.df_whizz_[['mark_complete', 'mark_incomplete']].fillna(0)
+        if self.config.FILL_NAN_BY_ZERO:
+            self.df_whizz_.loc[:, ['mark_complete', 'mark_incomplete']] = \
+                self.df_whizz_[['mark_complete', 'mark_incomplete']].fillna(0)
+
+        # NaN check - if there is no assessment at all, then all outcome shall 
+        # be NaN
+        if not self.config.FILL_NAN_BY_ZERO:
+            self.df_whizz_.loc[self.df_whizz_['assess']==0, 
+                               ['mark_complete', 'mark_incomplete']] = np.nan
+            self.df_whizz_.loc[self.df_whizz_['num_complete']==0, 
+                               ['mark_complete']] = np.nan
+            self.df_whizz_.loc[self.df_whizz_['num_incomplete']==0, 
+                               ['mark_incomplete']] = np.nan
 
     def add_hardship(self):
         df_features1 = self._df_features
@@ -752,6 +777,11 @@ class FeatureCM(object):
         df_hard_inactive = pd.DataFrame(0, 
                                         index=self.pupils_inactive_churnOption_, 
                                         columns=df_hard.columns)
+        if not self.config.FILL_NAN_BY_ZERO:
+            # number of helps used by inactive subscribers are NA because they 
+            # do not take any lesson
+            df_hard_inactive.loc[:, ['help_sd0', 'help_sd1', 'help_sd2']] = \
+                np.nan
 
         df_hard = df_hard.append(df_hard_inactive)
 

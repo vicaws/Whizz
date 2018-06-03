@@ -19,6 +19,41 @@ def _fix_bug(df_subspt):
     df_subspt.loc[df_subspt['pupilId']==1077142, 'subscription_end_date'] = \
         pd.to_datetime('2016-08-11')
 
+    df_subspt.loc[df_subspt['pupilId']==667206, 'subscription_end_date'] = \
+        pd.to_datetime('2017-11-05')
+
+    df_subspt.loc[df_subspt['pupilId']==695686, 'subscription_end_date'] = \
+        pd.to_datetime('2018-02-19')
+
+    df_subspt.loc[df_subspt['pupilId']==678296, 'subscription_end_date'] = \
+        pd.to_datetime('2018-04-20')
+
+    df_subspt.loc[df_subspt['pupilId']==751972, 'subscription_end_date'] = \
+        pd.to_datetime('2014-12-07')
+
+    df_subspt.loc[df_subspt['pupilId']==1201178, 'subscription_end_date'] = \
+        pd.to_datetime('2017-08-04')
+
+    df_subspt.loc[(df_subspt['pupilId']==677810) & \
+        (df_subspt['subscription_start_date']==pd.to_datetime('2017-04-10')),
+                  'subscription_end_date'] = pd.to_datetime('2017-05-10')
+
+    df_subspt.loc[(df_subspt['pupilId']==792118) & \
+        (df_subspt['subscription_start_date']==pd.to_datetime('2015-04-26')),
+                  'subscription_end_date'] = pd.to_datetime('2015-05-26')
+
+    df_subspt.loc[(df_subspt['pupilId']==729176) & \
+        (df_subspt['subscription_start_date']==pd.to_datetime('2015-02-15')),
+                  'subscription_end_date'] = pd.to_datetime('2015-03-11')
+
+    df_subspt.loc[(df_subspt['pupilId']==827220) & \
+        (df_subspt['subscription_start_date']==pd.to_datetime('2016-02-22')),
+                  'subscription_end_date'] = pd.to_datetime('2016-03-22')
+
+    df_subspt.loc[(df_subspt['pupilId']==793255) & \
+        (df_subspt['subscription_start_date']==pd.to_datetime('2016-06-23')),
+                  'subscription_end_date'] = pd.to_datetime('2016-07-23')
+
 def retrieve_data(configuration):
     '''Load data from CSV files and pre-process data
     '''
