@@ -679,6 +679,11 @@ class FeatureCM(object):
                 self.df_whizz_.index.isin(self.pupils_activePast_), 
                 'progress'] = progress_activePast
         
+        # Add effective progress
+        self.df_whizz_ = self.df_whizz_.assign(
+            effective_progress=self.df_whizz_['progress_delta']/\
+                self.df_whizz_['usage']*3600.)
+
     def add_age(self):
         subspt_end_date = self.subspt_end_date_active_.\
             append(self.subspt_end_date_inactive_)

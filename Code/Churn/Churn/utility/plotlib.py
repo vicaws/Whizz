@@ -345,7 +345,52 @@ def feature_correlation(df_features, size=10):
     # Add the colorbar legend
     cbar = fig.colorbar(cax, ticks=[-1, 0, 1], aspect=40, shrink=.8)
 
+def compare_transformed_singleValueRemoved(df_whizz, feature_name, remove_point):
+    series = df_whizz[feature_name]
+    x = series.values
+
+    # Box-cox transformation
+    from scipy import stats
+    xt,_ = stats.boxcox(x+1)
+    
+    # Standardise
+    from sklearn.preprocessing import MinMaxScaler
+    xt1 = xt.reshape(-1, 1)
+    xt1 = MinMaxScaler().fit(xt1).transform(xt1)
+    xt1 *= 99
+    xt1 += 1
+    xt = xt1.reshape(-1, 1)
+
+    # Extract non-zero elements
+    if remove_point=='min':
+        x_rm = x[np.where(x!=x.min())[0].tolist()]
+        xt_rm = xt[np.where(xt!=xt.min())[0].tolist()]
+    elif remove_point=='max':
+        x_rm = x[np.where(x!=x.max())[0].tolist()]
+        xt_rm = xt[np.where(xt!=xt.max())[0].tolist()]
+    
+    # Plot
+    fig = plt.figure(figsize=(12,3))
+    ax = fig.add_subplot(141)
+    sns.distplot(x)
+    ax.set_title('Raw')
+
+    ax = fig.add_subplot(142)
+    sns.distplot(x_rm)
+    ax.set_title('Raw with '+remove_point+' removed')
+
+    ax = fig.add_subplot(143)
+    sns.distplot(xt)
+    ax.set_title('Transformed')
+
+    ax = fig.add_subplot(144)
+    sns.distplot(xt_rm)
+    ax.set_title('Transformed with '+remove_point+' removed')
+
+    plt.tight_layout()
+
 #endregion
+
 
 #region Mixture Model
 
@@ -395,6 +440,25 @@ def component_bar(expectations, predictions, n_components):
     vals = ax.get_yticks()
     ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
     
+    plt.tight_layout()
+
+def density_mixtureModel(feature_name, feature_data, mixture_model, hist_bin):
+    x = feature_data
+    xbin = np.arange(x.min()-(x.max()-x.min())/50., x.max()*1.1, 
+                     (x.max()-x.min())/hist_bin)
+    xs = np.arange(x.min()-(x.max()-x.min())/50., x.max()*1.1, 
+                   (x.max()-x.min())/100.)
+    prob = mixture_model.probability(xs)
+
+    plt.figure(figsize=(12, 3))
+    plt.subplot(121)
+    plt.title(feature_name, fontsize=12)
+    plt.hist(x, bins=xbin, alpha=0.6, density=True)
+    plt.plot(xs, prob, color='k')
+
+    plt.ylabel("Density", fontsize=12); plt.yticks(fontsize=12)
+    plt.xlabel("Value", fontsize=12); plt.yticks(fontsize=12)
+
     plt.tight_layout()
 
 #endregion

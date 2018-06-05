@@ -9,8 +9,8 @@ class FeatureAttribute(object):
     multiplierPre = 1.
     shiftPre = 0.
     bcTransform = False
-    multiplierPost = 1.
-    shiftPost = 0.
+    multiplierPost = 100-1.
+    shiftPost = 1.
     distributionList = []
 
 class FeatureConfig_G1(object):
@@ -18,14 +18,39 @@ class FeatureConfig_G1(object):
     """
 
     def __init__(self):
-        pass
+        self.ftr_list_independent = []
+
+        self.ftr_list_multivariate = ['last_access',
+                                      'progress',
+                                      'age',
+                                      'calendar_month']
         
+        self.ftr_list = self.ftr_list_independent + self.ftr_list_multivariate
+
+        # Multivariate Components
+        self.multivariate_shift = 1.
+
 class FeatureConfig_G2(object):
     """Feature configuration for Group 2.
     """
 
     def __init__(self):
+        self.ftr_list_independent = ['rate_incomplete_num']
 
+        self.ftr_list_multivariate = ['num_attempt',
+                                      'last_access', 
+                                      'usage',
+                                      'sum_help',
+                                      'age',
+                                      'progress',
+                                      'calendar_month']
+        
+        self.ftr_list = self.ftr_list_independent + self.ftr_list_multivariate
+        
+        # Multivariate Components
+        self.multivariate_shift = 1.
+
+        # Independent Components
         self.rate_incomplete_num = FeatureAttribute()
         self.rate_incomplete_num.name = 'rate_incomplete_num'
         self.rate_incomplete_num.shiftPre = 1.
@@ -39,7 +64,27 @@ class FeatureConfig_G3(object):
     """
 
     def __init__(self):
+        self.ftr_list_independent = ['rate_incomplete_num',
+                                     'rate_fail',
+                                     'rate_stackDepth23_num',
+                                     'rate_assess']
 
+        self.ftr_list_multivariate = ['num_attempt',
+                                      'last_access', 
+                                      'usage',
+                                      'sum_help',
+                                      'age',
+                                      'mark_complete',
+                                      'progress', 'progress_delta',
+                                      'calendar_month',
+                                      'effective_progress']
+
+        self.ftr_list = self.ftr_list_independent + self.ftr_list_multivariate
+
+        # Multivariate Components
+        self.multivariate_shift = 1.
+
+        # Independent Components
         self.rate_incomplete_num = FeatureAttribute()
         self.rate_incomplete_num.name = 'rate_incomplete_num'
         self.rate_incomplete_num.shiftPre = 1.
