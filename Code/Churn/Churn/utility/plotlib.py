@@ -265,9 +265,11 @@ def survival_customer_month(df_subspt, configuration):
     fig = plt.figure(figsize=(12,3))
 
     ax = fig.add_subplot(121)
-    gmean_survival_rate =  (survival_population.values[-1] / survival_population.values[0])**\
-        (1.0 / (survival_population.shape[0]-1))
-    survival_theory = np.power(gmean_survival_rate, range(0, survival_population.shape[0])) * survival_population.values[0]
+    gmean_survival_rate =  (survival_population.values[-1] /\
+       survival_population.values[0])**(1.0 / (survival_population.shape[0]-1))
+    survival_theory = np.power(gmean_survival_rate, 
+                               range(0, survival_population.shape[0])) *\
+                                  survival_population.values[0]
     ax.plot(survival_population, '-ko')
     ax.plot(survival_population.index, survival_theory, '--')
     ax.set_title('Population Survival Count')

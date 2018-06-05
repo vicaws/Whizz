@@ -71,11 +71,26 @@ class GroupConfig(object):
 
 class MixtureModel(object):
     """Class of fitting and evaluating mixture model
+
+    Attributes
+    ----------
+    map_group_model_: dictionary,
+            key=string, group ID - 'G1', 'G2' or 'G3';
+            value=list of 3 elements.
+        The value is a list of 3 elements:
+        (1) df_grouping_list: list of df_grouping data frame of different 
+            trials;
+        (2) map_group_pupilId_list: list if map_group_pupilId dictionary of 
+            different trials;
+        (3) map_group_cmonth_list: list if map_group_cmonth dictionary of 
+            different trials;
+
     """
 
     def __init__(self, group_config):
         self.group_config_ = group_config
         self.map_group_model_ = {}
+        self.map_group_expectation_ = {}
 
     def fit(self):
         # Fit for Group 1

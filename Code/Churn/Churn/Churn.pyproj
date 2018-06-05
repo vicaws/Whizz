@@ -45,6 +45,7 @@
     </Compile>
     <Compile Include="utility\iolib.py" />
     <Compile Include="utility\plotlib.py" />
+    <Compile Include="utility\sankey.py" />
     <Compile Include="utility\__init__.py" />
   </ItemGroup>
   <ItemGroup>
