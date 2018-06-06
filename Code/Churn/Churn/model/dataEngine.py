@@ -65,7 +65,7 @@ class DataEngine(object):
         feature.add_usageTime(self._df_lesson, self._df_incomp)
         feature.add_progressions(self._df_lesson)
         feature.add_age(self._df_pupils)
-        #feature.add_mathAge(self._df_lesson, self._df_incomp)
+        feature.add_mathAge(self._df_lesson, self._df_incomp)
         feature.add_outcome(self._df_lesson)
         feature.add_hardship(self._df_lesson, self._df_incomp)
         feature.add_mark(self._df_lesson, self._df_incomp)
@@ -100,7 +100,7 @@ class DataEngine(object):
             ftrCM.add_outcome()
             ftrCM.add_hardship()
             ftrCM.add_mark()
-            #ftrCM.add_mathAge()
+            ftrCM.add_mathAge()
     
             df = ftrCM.df_whizz_
             df_whizz = pd.concat([df_whizz, df], axis=0)

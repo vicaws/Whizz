@@ -90,7 +90,10 @@ class MixtureModel(object):
     def __init__(self, group_config):
         self.group_config_ = group_config
         self.map_group_model_ = {}
+        self.map_group_model_best_ = {}
         self.map_group_expectation_ = {}
+
+        self.df_cluster_ = pd.DataFrame()
 
     def fit(self):
         # Fit for Group 1
@@ -137,6 +140,105 @@ class MixtureModel(object):
                                   map_group_cmonth_list3]}
 
         self.map_group_model_ = map_group_model
+
+    def cluster(self, map_cluster_anchors):
+        '''Cluster subgroups in each group accroding to the pre-defined anchor 
+        points.
+        '''
+        list_group_name = ['G1','G2','G3']
+        list_df_grouping_cluster = []
+        list_map_cluster_pupilId = []
+        list_map_cluster_cmonth = []
+
+        for g in list_group_name:
+            # Get data
+            df_grouping = self.map_group_model_best_[g][0]
+            map_group_pupilId = self.map_group_model_best_[g][1]
+            map_group_cmonth = self.map_group_model_best_[g][2]
+            y = self.map_group_expectation_[g]
+            cluster_anchors = map_cluster_anchors[g]
+            
+            # Define place-holder
+            num_clusters = len(cluster_anchors) - 1
+            cluster_churn = []
+            cluster_count = []
+            cluster_Id = []
+            map_cluster_pupilId = {}
+            map_cluster_cmonth = {}
+
+            l = np.arange(0, len(y)) + 1
+            for i in range(len(cluster_anchors)):
+                if i==0:
+                    continue
+                else:
+                    lower = np.percentile(l, cluster_anchors[i-1])
+                    upper = np.percentile(l, cluster_anchors[i])
+
+                # Define sub-dataframe: [...) [...) ... [...) [...]
+                if i==len(cluster_anchors)-1:
+                    mask = (df_grouping['cumcount']>=lower) & \
+                        (df_grouping['cumcount']<=upper)
+                else:
+                    mask = (df_grouping['cumcount']>=lower) & \
+                        (df_grouping['cumcount']<upper)
+                
+                df = df_grouping[mask]
+
+                # Get information of pupilId and customer_month
+                groupId = df['groupId'].values
+                pupilId = np.hstack([map_group_pupilId[key] for key in groupId])
+                cmonth = np.hstack([map_group_cmonth[key] for key in groupId])
+
+                temp = df['churn'] * df['count']
+                num_churn = temp.sum()
+                cluster_count.append(df['count'].sum())
+                cluster_churn.append(num_churn*1./cluster_count[i-1])
+                cluster_Id.append(g+str(i))
+                map_cluster_pupilId[g+str(i)] = pupilId
+                map_cluster_cmonth[g+str(i)] = cmonth
+
+            # Construct df_grouping_cluster
+            data = {'count': cluster_count,
+                    'churn': cluster_churn,
+                    'clusterId': cluster_Id}
+            df_grouping_cluster = pd.DataFrame(data)
+            df_grouping_cluster['cumcount'] = \
+                df_grouping_cluster['count'].cumsum()
+
+            # Update the list place-holder
+            list_df_grouping_cluster.append(df_grouping_cluster)
+            list_map_cluster_pupilId.append(map_cluster_pupilId)
+            list_map_cluster_cmonth.append(map_cluster_cmonth)
+        
+        # Aggregate over groups G1, G2 and G3
+        df_cluster = pd.DataFrame()
+        map_cluster_pupilId = {}
+        map_cluster_cmonth = {}
+        for i in range(len(list_group_name)):
+            df_cluster = pd.concat([df_cluster, list_df_grouping_cluster[i]], 
+                                   axis=0)
+            map_cluster_pupilId.update(list_map_cluster_pupilId[i])
+            map_cluster_cmonth.update(list_map_cluster_cmonth[i])
+
+        df_cluster.reset_index(inplace=True)
+
+        # Output
+        self.df_cluster_ = df_cluster
+
+        # Construct df_cluster_details which holds information of pupilId and 
+        # customer_month
+        df_cluster_details = pd.DataFrame()
+        for key in map_cluster_pupilId.keys():
+            df = pd.DataFrame()
+            df = df.assign(pupilId = map_cluster_pupilId[key],
+                           cmonth = map_cluster_cmonth[key])
+            df['clusterId'] = key
+            df_cluster_details = pd.concat([df_cluster_details, df], axis=0)
+
+        df_cluster_details.reset_index(inplace=True)
+
+        # Output
+        self.df_cluster_details_ = df_cluster_details
 
     def fit_independentComponent(self, df_whizz, feature_config, feature_name, 
                                  plot=0, hist_bin=35):
@@ -298,8 +400,12 @@ class MixtureModel(object):
                 score = np.sum((base_churn-group_churn)**2 * group_count**2)
             elif criterion=='max_number':
                 score = max((group_churn-base_churn)* group_count)
+            elif criterion=='max_rate':
+                score = max(group_churn)
             elif criterion=='min_number':
                 score = -min((group_churn-base_churn)* group_count)
+            elif criterion=='min_rate':
+                score = -min(group_churn)
             score_list.append(score)
     
         return score_list
@@ -410,4 +516,6 @@ class MixtureModel(object):
                                       map_group_cmonth_list[idx_maxScore]]
     
         self.map_group_expectation_ = map_group_expectaion
+        self.map_group_model_best_ = map_group_model_best
+
         return map_group_model_best

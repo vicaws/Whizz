@@ -463,4 +463,36 @@ def density_mixtureModel(feature_name, feature_data, mixture_model, hist_bin):
 
     plt.tight_layout()
 
+def churn_distribution(mixture_model, list_title):
+    list_group_name = ['G1','G2','G3']
+    fig = plt.figure(figsize=(12,3))
+    for i in range(len(list_group_name)):
+        # Get data
+        group_name = list_group_name[i]
+        df_grouping = mixture_model.map_group_model_best_[group_name][0]
+        y = mixture_model.map_group_expectation_[group_name]
+
+        ax = fig.add_subplot(1, len(list_group_name), i+1)
+        ax.step(df_grouping['cumcount'].values, df_grouping['churn'].values, 
+                linewidth=4, alpha=0.8, 
+                label='Clustering churn')
+        ax.axhline(y=y.sum()/len(y), 
+                   linestyle='--', color='k', alpha=0.8, 
+                   label='Group average churn')
+        ax.axvline(x=np.percentile(np.arange(0, len(y)), 1), 
+                   linestyle=':', color='g')
+        ax.axvline(x=np.percentile(np.arange(0, len(y)), 5), 
+                   linestyle=':', color='g')
+        ax.axvline(x=np.percentile(np.arange(0, len(y)), 90), 
+                   linestyle=':', color='g')
+        ax.set_ylim([0,1])
+        vals = ax.get_yticks()
+        ax.set_yticklabels(['{:3.0f}%'.format(x*100) for x in vals]);
+        ax.set_xlabel('Number of pupils')
+        ax.set_ylabel('Churn rate')
+        ax.set_title(list_title[i])
+        ax.legend(loc='upper right');
+
+    plt.tight_layout()
+
 #endregion

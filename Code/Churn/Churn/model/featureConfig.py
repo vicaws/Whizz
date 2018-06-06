@@ -77,12 +77,13 @@ class FeatureConfig_G3(object):
                                       'mark_complete',
                                       'progress', 'progress_delta',
                                       'calendar_month',
-                                      'effective_progress']
+                                      'effective_progress',
+                                      'age_diff']
 
         self.ftr_list = self.ftr_list_independent + self.ftr_list_multivariate
 
         # Multivariate Components
-        self.multivariate_shift = 1.
+        self.multivariate_shift = 10.
 
         # Independent Components
         self.rate_incomplete_num = FeatureAttribute()
