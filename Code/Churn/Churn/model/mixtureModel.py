@@ -92,13 +92,15 @@ class MixtureModel(object):
         self.map_group_model_ = {}
         self.map_group_model_best_ = {}
         self.map_group_expectation_ = {}
+        self.map_group_transform_ = {}
 
         self.df_cluster_ = pd.DataFrame()
 
     def fit(self):
         # Fit for Group 1
         print('Start fitting mixture model for G1.')
-        df_grouping_list1, map_group_pupilId_list1, map_group_cmonth_list1 = \
+        df_grouping_list1, map_group_pupilId_list1, map_group_cmonth_list1, \
+            map_group_mModel_list1, map_var_ftr1, map_ftr_transform1 = \
             self.fit_mixtureModel(
                 self.group_config_.df_whizz_G1_,
                 self.group_config_.ftrConfig_G1_, 
@@ -109,7 +111,8 @@ class MixtureModel(object):
         
         # Fit for Group 2
         print('Start fitting mixture model for G2.')
-        df_grouping_list2, map_group_pupilId_list2, map_group_cmonth_list2 = \
+        df_grouping_list2, map_group_pupilId_list2, map_group_cmonth_list2, \
+           map_group_mModel_list2, map_var_ftr2, map_ftr_transform2 = \
             self.fit_mixtureModel(
                 self.group_config_.df_whizz_G2_, 
                 self.group_config_.ftrConfig_G2_, 
@@ -120,7 +123,8 @@ class MixtureModel(object):
 
         # Fit for Group 3
         print('Start fitting mixture model for G3.')
-        df_grouping_list3, map_group_pupilId_list3, map_group_cmonth_list3 = \
+        df_grouping_list3, map_group_pupilId_list3, map_group_cmonth_list3, \
+           map_group_mModel_list3, map_var_ftr3, map_ftr_transform3 = \
             self.fit_mixtureModel(
                 self.group_config_.df_whizz_G3_, 
                 self.group_config_.ftrConfig_G3_, 
@@ -131,13 +135,22 @@ class MixtureModel(object):
         
         map_group_model = {'G1': [df_grouping_list1, 
                                   map_group_pupilId_list1, 
-                                  map_group_cmonth_list1],
+                                  map_group_cmonth_list1,
+                                  map_group_mModel_list1,
+                                  map_var_ftr1,
+                                  map_ftr_transform1],
                            'G2': [df_grouping_list2, 
                                   map_group_pupilId_list2, 
-                                  map_group_cmonth_list2],
+                                  map_group_cmonth_list2,
+                                  map_group_mModel_list2,
+                                  map_var_ftr2,
+                                  map_ftr_transform2],
                            'G3': [df_grouping_list3, 
                                   map_group_pupilId_list3, 
-                                  map_group_cmonth_list3]}
+                                  map_group_cmonth_list3,
+                                  map_group_mModel_list3,
+                                  map_var_ftr3,
+                                  map_ftr_transform3]}
 
         self.map_group_model_ = map_group_model
 
@@ -240,6 +253,10 @@ class MixtureModel(object):
         # Output
         self.df_cluster_details_ = df_cluster_details
 
+    def transform(self, feature_name, feature_data):
+        
+        pass
+
     def fit_independentComponent(self, df_whizz, feature_config, feature_name, 
                                  plot=0, hist_bin=35):
         '''Fit mixed distributions for features defined as independent component.
@@ -292,6 +309,8 @@ class MixtureModel(object):
         if ftr_config.bcTransform:
             xt, bc_param = stats.boxcox(x)
             x = xt
+        else:
+            bc_param = -10000
         x = x.reshape(-1,1)
         # Standardisation
         scaler = MinMaxScaler()
@@ -299,6 +318,14 @@ class MixtureModel(object):
         x = scaler.transform(x)
         x *= ftr_config.multiplierPost
         x += ftr_config.shiftPost
+
+        # Record the transform
+        map_transform_coeff = {'multiplierPre': ftr_config.multiplierPre,
+                               'shiftPre': ftr_config.shiftPre,
+                               'multiplierPost': ftr_config.multiplierPost,
+                               'shiftPost': ftr_config.shiftPost,
+                               'scaler': scaler,
+                               'bc': bc_param}
 
         # Define the list of distributions to be mixed
         distribution_list = ftr_config.distributionList
@@ -311,7 +338,7 @@ class MixtureModel(object):
             utility.plotlib.density_mixtureModel(
                 feature_name, x, gmm, hist_bin=hist_bin)
     
-        return gmm, x
+        return gmm, x, map_transform_coeff
 
     def getData_multivariateComponent(self, df_whizz, feature_config):
         '''Prepare the feature and target data for multivariate compoments.
@@ -337,6 +364,7 @@ class MixtureModel(object):
         from sklearn.preprocessing import MinMaxScaler
     
         ftr_list_multivariate = feature_config.ftr_list_multivariate
+        map_ftr_transform = {}
 
         # Linear transformation
         X = np.array(df_whizz[ftr_list_multivariate]+\
@@ -344,14 +372,22 @@ class MixtureModel(object):
         # Box-Cox transformation
         Xt = X
         for i in range(0, X.shape[1]):
-            xt, _ = stats.boxcox(X[:,i])
+            xt, bc_param = stats.boxcox(X[:,i])
             Xt[:, i] = xt
+            # Record the transform
+            map_transform_coeff = {'bc': bc_param}
+            map_ftr_transform[ftr_list_multivariate[i]] = map_transform_coeff
         # Standardisation
-        Xt_scaled = MinMaxScaler().fit(Xt).transform(Xt)
+        scaler = MinMaxScaler().fit(Xt)
+        Xt_scaled = scaler.transform(Xt)
+        
+        map_ftr_transform['multivariate_shift'] = \
+            feature_config.multivariate_shift
+        map_ftr_transform['multivariate_scaler'] = scaler
 
         y = df_whizz.churn.values
     
-        return Xt_scaled, y
+        return Xt_scaled, y, map_ftr_transform
 
     def construct_df_grouping(self, group, group_name, df_whizz):
         # Identify unique groups/labels and frequency
@@ -413,34 +449,46 @@ class MixtureModel(object):
     def fit_mixtureModel(self, df_whizz, ftrConfig, 
                          n_components, n_trials, n_multi, baysian):
         from sklearn import mixture
-        X, y = self.getData_multivariateComponent(df_whizz, ftrConfig)
+        X, y, map_ftr_transform =\
+           self.getData_multivariateComponent(df_whizz, ftrConfig)
 
         ftr_list_multivariate = ftrConfig.ftr_list_multivariate
         ftr_list_independent = ftrConfig.ftr_list_independent
 
+        map_var_ftr = {}
+        
         # Mixture model for independent components
         group_ic = []
         group_ic_name = []
+        map_group_mModel_ic = {}
         n_var_indep = len(ftr_list_independent)
         for i_var in range(n_var_indep):
             ftr_str = ftr_list_independent[i_var]
-            gmm, x = self.fit_independentComponent(df_whizz, ftrConfig, ftr_str,
-                                                   plot=0, hist_bin=35)
+            gmm, x, map_transform_coeff = \
+                self.fit_independentComponent(df_whizz, ftrConfig, ftr_str,
+                                              plot=0, hist_bin=35)
             l = gmm.predict(x)
             group_ic.append(l)
             group_ic_name.append('indep'+str(i_var))
-    
+            map_group_mModel_ic['indep'+str(i_var)] = gmm
+            map_var_ftr['indep'+str(i_var)] = ftr_str
+            
+            # Update the data transformation map
+            map_ftr_transform[ftr_str] = map_transform_coeff
+
         # Mixture model for multivariate components
         n_features = len(ftr_list_multivariate)
         df_grouping_list = []
         map_group_pupilId_list = []
         map_group_cmonth_list = []
+        map_group_mModel_list = []
         print('Start fitting multivariate mixture models.')
         for trial in range(0, n_trials):
             print('Trial NO. = {}/{}'.format(trial+1, n_trials))
-    
-            group = group_ic[:]
-            group_name = group_ic_name[:]
+            
+            group = group_ic[:] # Pass by value
+            group_name = group_ic_name[:] # Pass by value
+            map_group_mModel = map_group_mModel_ic.copy() # Pass by value
     
             for i_multi in range(0, n_multi):
                 if baysian:
@@ -452,6 +500,7 @@ class MixtureModel(object):
                         init_params="random", tol=1e-6, max_iter=10000, n_init=1, 
                         verbose=0, verbose_interval=100).fit(X)
                     l = dpgmm.predict(X)
+                    map_group_mModel['multi'+str(i_multi)] = dpgmm
                 else:
                     gmm = mixture.GaussianMixture(
                         n_components=n_components, 
@@ -460,6 +509,7 @@ class MixtureModel(object):
                         verbose=0, verbose_interval=100,
                         n_init=1, tol=1e-6, max_iter=1000).fit(X)
                     l = gmm.predict(X)
+                    map_group_mModel['multi'+str(i_multi)] = gmm
         
                 group.append(l)
                 group_name.append('multi'+str(i_multi))
@@ -469,8 +519,11 @@ class MixtureModel(object):
             df_grouping_list.append(df_grouping)
             map_group_pupilId_list.append(map_group_pupilId)
             map_group_cmonth_list.append(map_group_cmonth)
+            map_group_mModel_list.append(map_group_mModel)
         
-        return  df_grouping_list, map_group_pupilId_list, map_group_cmonth_list
+        return  df_grouping_list, map_group_pupilId_list, \
+            map_group_cmonth_list, map_group_mModel_list, \
+            map_var_ftr, map_ftr_transform
 
     def select_bestMixtureModel(self, criterion='deviation'):
         ''' Evaluate different groupings and select the best
@@ -484,36 +537,48 @@ class MixtureModel(object):
         df_grouping_list = self.map_group_model_['G1'][0]
         map_group_pupilId_list = self.map_group_model_['G1'][1]
         map_group_cmonth_list = self.map_group_model_['G1'][2]
+        map_group_mMonth_list = self.map_group_model_['G1'][3]
+        map_var_ftr = self.map_group_model_['G1'][4]
 
         score_list = self.compute_groupingScore(df_grouping_list, y, criterion)
         idx_maxScore = np.argmax(score_list)
         map_group_model_best['G1'] = [df_grouping_list[idx_maxScore],
                                       map_group_pupilId_list[idx_maxScore],
-                                      map_group_cmonth_list[idx_maxScore]]
+                                      map_group_cmonth_list[idx_maxScore],
+                                      map_group_mMonth_list[idx_maxScore],
+                                      map_var_ftr]
         # G2
         y = self.group_config_.df_whizz_G2_['churn'].values
         map_group_expectaion['G2'] = y
         df_grouping_list = self.map_group_model_['G2'][0]
         map_group_pupilId_list = self.map_group_model_['G2'][1]
         map_group_cmonth_list = self.map_group_model_['G2'][2]
+        map_group_mMonth_list = self.map_group_model_['G2'][3]
+        map_var_ftr = self.map_group_model_['G2'][4]
 
         score_list = self.compute_groupingScore(df_grouping_list, y, criterion)
         idx_maxScore = np.argmax(score_list)
         map_group_model_best['G2'] = [df_grouping_list[idx_maxScore],
                                       map_group_pupilId_list[idx_maxScore],
-                                      map_group_cmonth_list[idx_maxScore]]
+                                      map_group_cmonth_list[idx_maxScore],
+                                      map_group_mMonth_list[idx_maxScore],
+                                      map_var_ftr]
         # G3
         y = self.group_config_.df_whizz_G3_['churn'].values
         map_group_expectaion['G3'] = y
         df_grouping_list = self.map_group_model_['G3'][0]
         map_group_pupilId_list = self.map_group_model_['G3'][1]
         map_group_cmonth_list = self.map_group_model_['G3'][2]
+        map_group_mMonth_list = self.map_group_model_['G3'][3]
+        map_var_ftr = self.map_group_model_['G3'][4]
 
         score_list = self.compute_groupingScore(df_grouping_list, y, criterion)
         idx_maxScore = np.argmax(score_list)
         map_group_model_best['G3'] = [df_grouping_list[idx_maxScore],
                                       map_group_pupilId_list[idx_maxScore],
-                                      map_group_cmonth_list[idx_maxScore]]
+                                      map_group_cmonth_list[idx_maxScore],
+                                      map_group_mMonth_list[idx_maxScore],
+                                      map_var_ftr]
     
         self.map_group_expectation_ = map_group_expectaion
         self.map_group_model_best_ = map_group_model_best
