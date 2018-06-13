@@ -234,6 +234,7 @@ class MixtureModel(object):
             map_cluster_cmonth.update(list_map_cluster_cmonth[i])
 
         df_cluster.reset_index(inplace=True)
+        df_cluster.drop(columns=['index'], inplace=True)
 
         # Output
         self.df_cluster_ = df_cluster
@@ -249,6 +250,7 @@ class MixtureModel(object):
             df_cluster_details = pd.concat([df_cluster_details, df], axis=0)
 
         df_cluster_details.reset_index(inplace=True)
+        df_cluster_details.drop(columns=['index'], inplace=True)
 
         # Output
         self.df_cluster_details_ = df_cluster_details

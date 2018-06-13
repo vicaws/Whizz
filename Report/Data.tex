@@ -1,8 +1,18 @@
 \section{Data Description and Pre-processing}
+\label{rec:data}
+
+\subsection{Whizz Database}
+
+Imbalanced data - the reason we don't mak them balanced is because we do not want to twist numerical value of churn rate. For example, if we balance the data set perfectly, then the population churn rate will become 50\%. After we do the clustering task, it is not straightforward to transform back the cluster churn rate for the balanced data set to that for the original imbalanced data set.
+
+\subsection{Feature Extraction}
+
+A table showing the definition of features.
+
+\subsection{Data Transformation}
 
 We denote the feature data by a matrix $\mathbf{X} = (x_{ij}) \in \mathbb{R}^{m \times n}$, which describes $n$ observed values for each of the $m$ features. In addition, we denote the $i$-th row of $\mathbf{X}$ by $\mathbf{x}_{i,\text{R}} = [x_{i1} ~x_{i2} ~\cdots ~x_{in}]$, and the $j$-th column by $\mathbf{x}_j = [x_{1j} ~x_{2j} ~\cdots ~x_{mj}]^\top$.
 
-\subsection{Data Transformation}
 
 In general, learning algorithms benefit from standardisation of the data set. We have employed 3 transformations in sequence to make our data more suitable for mixture model learning task. The transformations are performed for each feature separately, resulting in different sets of transformation parameters for different features. To be specific, for $i$-th feature we describe the transformations as following.
 

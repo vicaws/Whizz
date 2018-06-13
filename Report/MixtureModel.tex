@@ -1,4 +1,27 @@
-\section{Mixture Model}
+\section{Modelling Customer Behaviors}
+\label{sec:model}
+
+Markov State and Mixture Model
+
+The goal is to assess the likelihood of customers canceling by examining their behaviors.
+
+We model the behaviors of customers as the emission of Markov states, either hidden or observable. With this modelling assumption, we can also do temporal transitional analysis to gain insights of customers' dynamic behavioral change.
+
+We can define states by some features.
+
+We can also infer states from data through clustering task. To undertake the clustering task, we choose to use mixture model. 
+
+\subsection{Representing Behaviours by Features}
+
+
+\subsection{Customer Journeys and Markov Chains}
+
+Schematic plot showing the relations between states and behaviors.
+
+Schematic plot showing temporal transition of states.
+
+
+\subsection{Clustering Using Mixture Model}
 
 \paragraph{Generative process}
 
@@ -28,3 +51,13 @@ where
 
 
 BNP clustering assume that there is an infinite number of latent clusters (namely $K \rightarrow +\infty$), but that a finite number of them is used to generate the observed data. There are an infinite number of clusters, though a finite data set only exhibits a finite number of active clusters.
+
+\subsection{Modelling Pipeline}
+
+Feature extraction
+
+Features distributional modelling
+
+Fitting mixture model
+
+Analytic (churn rate calculation, clusters interpretation)

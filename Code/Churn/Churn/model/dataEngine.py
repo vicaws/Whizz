@@ -118,3 +118,17 @@ class DataEngine(object):
         self.feature_list_ = feature_list
         self.data_ = np.array(df_whizz1)
         self.target_ = self.df_whizz_['churn'].values
+
+    def transform_boxCox(self):
+        df_whizz1 = self.df_whizz_[self.feature_list_]
+        Xt = []
+
+        for ftr in self.feature_list_:
+            x = df_whizz1[ftr].values + 1   # make 0s posiitve
+            if ftr == 'age_diff':           # make data positive, age_diff 
+                                            # contains negative points
+                x += 10
+            xt, _ = stats.boxcox(x)
+            Xt.append(xt)
+
+        self.data_bc_ = np.array(Xt).transpose()
