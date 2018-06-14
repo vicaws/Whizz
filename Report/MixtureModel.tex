@@ -1,5 +1,52 @@
-\section{Modelling Customer Behaviors}
+\section{Modelling Customer Behaviours}
 \label{sec:model}
+
+Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We would like to represent the various behaviour dynamics of a collection of customers by panel data, and employ the Markov chain model to describe these data. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours observable within a single time interval.
+
+\subsection{Representing Behaviours by Features}
+
+A \textit{feature} is an individual measurable property of a behaviour being observed, and choosing informative features is crucial for effective clustering. For example, to measure how often the pupil uses Whizz online tutorial, we can define the time spent or number of visits within a month as the feature. For each customer, we define multiple features to capture his behaviours of various aspects within a time interval. Suppose we are interested in studying bahaviours of $n$ customers in $T$ discrete consecutive time periods, and define $m$ features, then we denote the feature data as a sequence:
+\begin{equation}
+\label{eq:customerJourney}
+\left\lbrace \mathbf{X}_1, ~\mathbf{X}_2, ~\dots, ~\mathbf{X}_t, ~\dots, ~\mathbf{X}_T \right\rbrace,
+\end{equation}
+in which the $t$-th element $\mathbf{X}_t = (x_{ij}^t) \in \mathbb{R}^{m \times n}$ is a matrix for all $t=1,2,\dots,T$. In addition, we denote the features of customer $j$ at the $t$-th time interval by the $j$-th column of $\mathbf{X}_t$ by $\mathbf{x}_{tj} = [x_{1j}^t ~x_{2j}^t ~\cdots ~x_{mj}^t]^\top$.
+
+\subsection{Customer Journeys and Markov Chain}
+
+Customer journeys reflect their feature dynamics over time, denoted as (\ref{eq:customerJourney}). One practical challenge of computing such sequence of matrices is to resolve the inconsistency present in journeys of different customers. The inconsistency refers to the problem that the time intervals for different customers being alive in the services are not aligned, so that their features are not comparable. Moreover, it is highly likely to have significant missing information within specific time intervals for customers who have not yet entered the service or have already churned. To resolve the inconsistency, we align and aggregate customers' features by \textit{customer month} rather than calendar month. Doing so enables the effective modelling using Markov chain.
+
+\subsubsection{Customer Month}
+
+Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to access Whizz products on a 1-month contract, and make the choice to leave the service at the end of each subscription. If no action is taken, a renewal will be made by default.
+
+Due to the inconsistency present in journeys of different customers, we align their features by switching the reference from calendar month to customer month. This is illustrated by an example in \Cref{fig:customerMonth}. It provides much cleaner and more sensible data for modelling task. 
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.75]{CustomerMonth.png}
+\caption{Change reference from calendar month to customer month. Customer A, B and C have very different journeys in the sense of subscription start and end dates. Each block represents customer's monthly features. Under calendar month reference, we have to choose studying months from March to August to cover all activities. This choice results in irregular temporal distribution of missing information for all 3 customers. After changing the reference to customer month, features are aligned by customer month and therefore comparable. Moreover, the missing information only occurs after the customer churns. It can also handle discontinuous subscriptions like the case of customer B.}
+\label{fig:customerMonth}
+\end{figure}
+
+\subsubsection{Markov Chain - Dynamic Model for Behavioural Changes}
+
+We assume that customers with intentions to churn exhibit different behaviours than others do. Behaviours are different distributionally, and generated from a finite number of \textit{states}. Then the discrete time behaviour of each customer results in a chain of states over time. This formulates into a discrete-time Markov chain with states transiting over time, where each state emits distinguishable behaviour distribution from others. An example is given in \Cref{fig:markovChain}.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.75]{Markov.png}
+\caption{Behaviours emitted from Markov states. States $S_1$, $S_2$ and $S_3$ generate differently distributed behaviours. For example, $S_1$ generates $\{ B_1, ~B_2, ~B_4\}$ while $S_3$ produces $\{ B_1, ~B_4\}$. Even if the two states can generate the same set of behaviours, the emission probabilities can be different, thus still resulting in different behaviour distributions. States transit between each other over time stochastically.}
+\label{fig:markovChain}
+\end{figure}
+
+Consider the behavioural journey of customer $j$, which is represented by a sequence of feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$. At time interval $t$, feature $\mathbf{x}_{tj}$ is an instance from a distribution generated by a state. Let's denote the time sequence of generative states as $\{ c_{tj} \}_{t=1}^{T}$. In a Markov chain setting the sequences are defined stochastically, with the next state being conditionally dependent on the present state, but not any further previous history. This is known as \textit{Markov property}. 
+
+
+
+
+
+
 
 Markov State and Mixture Model
 
@@ -11,14 +58,14 @@ We can define states by some features.
 
 We can also infer states from data through clustering task. To undertake the clustering task, we choose to use mixture model. 
 
-\subsection{Representing Behaviours by Features}
 
 
-\subsection{Customer Journeys and Markov Chains}
 
 Schematic plot showing the relations between states and behaviors.
 
 Schematic plot showing temporal transition of states.
+
+Verify the first order markov property (stationarity assumption, the generative stochastic process is itself time invariant, and thus the parameters describing all probabilistic transitions are themselves constant)
 
 
 \subsection{Clustering Using Mixture Model}

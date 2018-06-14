@@ -2,11 +2,40 @@
 \usepackage[T1]{fontenc}
 \usepackage[latin9]{inputenc}
 
+% Reference
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+% Figure
+\graphicspath{{Figure/}} % Set the default folder of all figures as "Figure"
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{chngcntr} % Set the counter depth
+\counterwithin{figure}{section}
+\captionsetup{ % Set the caption style
+   font=footnotesize,
+   labelfont=bf,
+   singlelinecheck=false,
+}
+
+% Maths
 \usepackage{amsmath, amsfonts, amsthm, amssymb}
 \usepackage{bm} % access bold symbols in maths mode
 
+% Header and footer
+\usepackage{fancyhdr}
+\fancyhead{}
+\fancyfoot{}
+\pagestyle{fancy} 
+\fancyhead[RO,LE]{\sffamily\small \thepage}
+\fancyhead[LO,RE]{\sffamily\small \nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.0pt}
+
 \makeatletter
 
+% InFoMM Configurations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
 
 %\renewcommand{\submittedtext}{A technical report for} %comment this out if you don't want to change the writing
