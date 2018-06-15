@@ -55,7 +55,7 @@ a_{pq}^t = \mathbb{P} \left( s_{t+1} = S_p | s_t = S_q \right).
 \end{equation}
 \label{eq:transition}
 \end{subequations}
-If we assume time-homogeneity or \textit{stantionarity} of the Markov chain, then we can remove the time subscript from the notations because $A \coloneqq A_1 = A_2 = \cdots = A_T$.
+If we assume time-homogeneity or \textit{stantionarity} of the Markov chain, then we can remove the time subscript from the notations because the parameters describing all probabilistic transitions are themselves constant.
 
 \paragraph*{Emission}
 
@@ -93,27 +93,50 @@ Ideally from the perspective of practical application of the model, we wish to e
 \begin{equation}
 b(\mathbf{o}_t) = \mathbb{P} (\mathbf{o}_t) = \sum_{k=1}^K \mathbb{P} (c_t = C_k) \mathbb{P} (\mathbf{o}_t | c_t = C_k) = \sum_{k=1}^K \pi_k \phi(\mathbf{o}_t ; \theta_k).
 \end{equation}
-Then we estimate $\{ \pi_k, \theta_k \}_{k=1}^K$ from observed feature data $\mathbf{X}_t$ with pre-defined multivariate kernel density $\phi(\cdot)$.
+Then we estimate $\{ \pi_k, \theta_k \}_{k=1}^K$ from observed feature data $\mathbf{X}_t$ with pre-defined multivariate kernel density $\phi(\cdot)$. This will be elaborated in section \ref{sec:mixtureModel}.
 
 \item The previous step gives not only the weights $\pi$ and cluster density $\phi(\cdot | \theta)$, but also a consequential cluster assignment of all customers. If we know the churn outcome for all customers, then we can calculate the proportion of churned customers, or churn rate, within each cluster. Thereafter, we can form states by grouping together clusters of similar level of churn rate.
 
-Formally, we denote the cluster assignment for customer $j$ at time $t$ by $u_j^t$. Then the set of customers who have been assigned into cluster $C_k$ is defined as,
+Formally, we define the set of customers who have been assigned into cluster $C_k$ as
 \begin{equation}
-\mathcal{N}_k^t = \left\lbrace j :~ u_j^t = C_k \right\rbrace.
+\mathcal{N}_k^t = \left\lbrace j :~ j \text{ is assigned into } C_k \text{ at time } t \right\rbrace.
 \end{equation}
 Meanwhile, we define the churn outcome information by a set
 \begin{equation}
 \mathcal{N}_\text{churn}^t = \{j: ~j \text{ churns at } t+1 \},
 \end{equation}
-so that the cluster churn rate is computed as
+so that the cluster churn rate is defined as
 \begin{equation}
 \lambda_k^t = \frac{\vert \mathcal{N}_k^t \cap \mathcal{N}_\text{cancel}^t \vert}{\vert  \mathcal{N}_k^t \vert}.
 \end{equation}
-
+Once the churn rates of all $K$ clusters, $\{ \lambda_k^t \}_{k=1}^K$, are computed, we group them and form $Q$ states. Typically $Q$ is much smaller than $K$. We denote the set of clusters consisting state $S_q$ as,
+\begin{equation}
+\mathcal{K}_q^t = \left\lbrace k :~ C_k \text{ is emitted from } S_q \text{ at time } t \right\rbrace.
+\end{equation}
 \end{enumerate}
+Afterwards, we can revisit the calculation for the state-to-observation emission probability $b_q(\mathbf{o}_t)$. Note that by the way we define state, we have
+\begin{equation}
+\pi_{qk} = \mathbb{P} \left( c_t = C_k | s_t = S_q \right) = \frac{\vert \mathcal{N}_k^t \vert}{\sum_{l \in \mathcal{K}_q^t} \vert \mathcal{N}_l^t \vert} \mathbbm{1}_{\{ k \in \mathcal{K}_q^t \}},
+\end{equation}
+where $\mathbbm{1}_{\{\cdot\}}$ is the indicator function. Then
+\begin{equation}
+b_q (\mathbf{o}_t) = \sum_{k=1}^K \pi_{qk} \phi(\mathbf{o}_t ; \theta_{qk}) = \sum_{ k \in \mathcal{K}_q^t } \frac{\vert \mathcal{N}_k^t \vert}{\sum_{l \in \mathcal{K}_q^t} \vert \mathcal{N}_l^t \vert} \phi(\mathbf{o}_t ; \theta_{k}).
+\end{equation}
 
 \paragraph*{Decoding Transition}
 
+We define the set of customers who transit from $S_p$ at $t$ to $S_q$ at $t+1$ as
+\begin{equation}
+\mathcal{Q}_{q \rightarrow p}^t = \left\lbrace j: ~s_t(j) = S_q, ~s_{t+1}(j) = S_p \right\rbrace.
+\end{equation}
+We assume that customers' behaviours are independent from others, then the maximum likelihood estimate of the transition probability is
+\begin{equation}
+\hat{a}^t_{pq} = \frac{\vert \mathcal{Q}_{q \rightarrow p}^t \vert}{\sum_{l=1}^Q \vert \mathcal{Q}_{q \rightarrow l}^t \vert}.
+\end{equation}
+If the Markov chain is assumed to be stationary, then we estimate
+\begin{equation}
+\hat{a}_{pq} = \frac{\sum_{t=1}^T \vert \mathcal{Q}_{q \rightarrow p}^t \vert}{\sum_{t=1}^T \sum_{l=1}^Q \vert \mathcal{Q}_{q \rightarrow l}^t \vert}.
+\end{equation}
 
 
 
@@ -122,16 +145,10 @@ so that the cluster churn rate is computed as
 
 
 
-
-
-
-
-
-
-Verify the first order markov property (stationarity assumption, the generative stochastic process is itself time invariant, and thus the parameters describing all probabilistic transitions are themselves constant)
 
 
 \subsection{Probabilistic Clustering Using Mixture Model}
+\label{sec:mixtureModel}
 
 \paragraph{Generative process}
 
