@@ -58,6 +58,7 @@ a_{pq}^t = \mathbb{P} \left( s_{t+1} = S_p | s_t = S_q \right).
 If we assume time-homogeneity or \textit{stantionarity} of the Markov chain, then we can remove the time subscript from the notations because the parameters describing all probabilistic transitions are themselves constant.
 
 \paragraph*{Emission}
+\label{sec:emission}
 
 Recall that feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$ observed are instances from some distribution. We introduce a generic notation for observed sequence of features, $\{ \mathbf{o}_{t} \}_{t=1}^{T}$, where $\mathbf{o}_t = [o_{t1} ~o_{t2} ~\cdots ~o_{tm}]^\top$. The sequence of observations are generated in the following way:
 \begin{enumerate}
@@ -68,7 +69,7 @@ Recall that feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$ observed are instance
 \end{equation}
 \item Once the cluster $c_t$ have been determined, an observation vector $\mathbf{o}_t$ is produced probabilistically according to some cluster-specific distribution $\phi(\mathbf{o}_t | \theta (s_t, c_t))$, where $\theta (s_t, c_t)$ denotes the distribution parameters. We write,
 \begin{equation}
-\phi(\mathbf{o}_t ; \theta_{qk}) =  \phi(\mathbf{o}_t ; \theta (S_q, C_k)) = \mathbb{P} \left( \mathbf{o}_t | s_t = S_q, c_t = C_k \right).
+\phi(\mathbf{o}_t | \theta_{qk}) =  \phi(\mathbf{o}_t | \theta (S_q, C_k)) = \mathbb{P} \left( \mathbf{o}_t | s_t = S_q, c_t = C_k \right).
 \end{equation}
 \end{enumerate}
 Given the generative process described above, we can now model the state-to-observation emission probability by a mixture of densities:
@@ -76,7 +77,7 @@ Given the generative process described above, we can now model the state-to-obse
 \begin{align}
 b_q (\mathbf{o}_t) & = \mathbb{P} \left( \mathbf{o}_t | s_t = S_q \right) \\
  & = \sum_{k=1}^K  \mathbb{P} \left( c_t = C_k | s_t = S_q \right) \mathbb{P} \left( \mathbf{o}_t | s_t = S_q, c_t = C_k \right) \\
- & = \sum_{k=1}^K \pi_{qk} \phi(\mathbf{o}_t ; \theta_{qk}).
+ & = \sum_{k=1}^K \pi_{qk} \phi(\mathbf{o}_t | \theta_{qk}).
 \end{align}
 \label{eq:emission}
 \end{subequations}
@@ -91,7 +92,8 @@ Ideally from the perspective of practical application of the model, we wish to e
 \begin{enumerate}
 \item We look at the behavioural distribution without conditioning on state, namely,
 \begin{equation}
-b(\mathbf{o}_t) = \mathbb{P} (\mathbf{o}_t) = \sum_{k=1}^K \mathbb{P} (c_t = C_k) \mathbb{P} (\mathbf{o}_t | c_t = C_k) = \sum_{k=1}^K \pi_k \phi(\mathbf{o}_t ; \theta_k).
+b(\mathbf{o}_t) = \mathbb{P} (\mathbf{o}_t) = \sum_{k=1}^K \mathbb{P} (c_t = C_k) \mathbb{P} (\mathbf{o}_t | c_t = C_k) = \sum_{k=1}^K \pi_k \phi(\mathbf{o}_t | \theta_k).
+\label{eq:bo}
 \end{equation}
 Then we estimate $\{ \pi_k, \theta_k \}_{k=1}^K$ from observed feature data $\mathbf{X}_t$ with pre-defined multivariate kernel density $\phi(\cdot)$. This will be elaborated in section \ref{sec:mixtureModel}.
 
@@ -120,7 +122,7 @@ Afterwards, we can revisit the calculation for the state-to-observation emission
 \end{equation}
 where $\mathbbm{1}_{\{\cdot\}}$ is the indicator function. Then
 \begin{equation}
-b_q (\mathbf{o}_t) = \sum_{k=1}^K \pi_{qk} \phi(\mathbf{o}_t ; \theta_{qk}) = \sum_{ k \in \mathcal{K}_q^t } \frac{\vert \mathcal{N}_k^t \vert}{\sum_{l \in \mathcal{K}_q^t} \vert \mathcal{N}_l^t \vert} \phi(\mathbf{o}_t ; \theta_{k}).
+b_q (\mathbf{o}_t) = \sum_{k=1}^K \pi_{qk} \phi(\mathbf{o}_t ; \theta_{qk}) = \sum_{ k \in \mathcal{K}_q^t } \frac{\vert \mathcal{N}_k^t \vert}{\sum_{l \in \mathcal{K}_q^t} \vert \mathcal{N}_l^t \vert} \phi(\mathbf{o}_t | \theta_{k}).
 \end{equation}
 
 \paragraph*{Decoding Transition}
@@ -129,7 +131,7 @@ We define the set of customers who transit from $S_p$ at $t$ to $S_q$ at $t+1$ a
 \begin{equation}
 \mathcal{Q}_{q \rightarrow p}^t = \left\lbrace j: ~s_t(j) = S_q, ~s_{t+1}(j) = S_p \right\rbrace.
 \end{equation}
-We assume that customers' behaviours are independent from others, then the maximum likelihood estimate of the transition probability is
+We assume that customers' behaviours are i.i.d. samples from the generating process, then the maximum likelihood estimate of the transition probability is
 \begin{equation}
 \hat{a}^t_{pq} = \frac{\vert \mathcal{Q}_{q \rightarrow p}^t \vert}{\sum_{l=1}^Q \vert \mathcal{Q}_{q \rightarrow l}^t \vert}.
 \end{equation}
@@ -138,48 +140,100 @@ If the Markov chain is assumed to be stationary, then we estimate
 \hat{a}_{pq} = \frac{\sum_{t=1}^T \vert \mathcal{Q}_{q \rightarrow p}^t \vert}{\sum_{t=1}^T \sum_{l=1}^Q \vert \mathcal{Q}_{q \rightarrow l}^t \vert}.
 \end{equation}
 
-
-
-
-
-
-
-
-
-
 \subsection{Probabilistic Clustering Using Mixture Model}
 \label{sec:mixtureModel}
 
-\paragraph{Generative process}
+A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. Practical calibration of the mixture model faces many choices such as the kernel density $\phi(\cdot)$, the number of clusters $K$, etc. A fundamental model setting is however the choice of frequentist or Bayes approach to estimate model parameters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
+\begin{enumerate}
+\item It is Baysian and treats $\theta$ as a random variable, of which distributions will be updated from a prior as observed data coming in. 
+\item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
+\end{enumerate}
+The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it does not worry about the unobserved data and can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
 
+\subsubsection{Dirichelet Process Mixture Model}
+
+\paragraph*{Definitions}
+
+A Dirichelet Process (DP) is a distribution of a random measure. Let $G_0$ be a base distribution (measure) for our cluster density parameter $\theta \in \Theta$, a measurable space, and let $\alpha$ be a positive, real-valued scalar. A random measure $G$ is then distributed according to \textit{Dirichelet Process} with scaling parameter $\alpha$ and base measure $G_0$:
+\begin{subequations}
 \begin{equation}
-\mathbb{P} (\mathbf{y}, \mathbf{c}, \bm \theta) = \prod_{k=1}^K G_0 (\theta_k) \prod_{n=1}^N F(y_n | \theta_{c_n}) P(c_n)
+G \sim \text{DP}(\cdot | G_0, \alpha),
 \end{equation}
-
-\begin{itemize}
-\item $\mathbf{y} = \{y_1, y_2, \cdots, y_N \}$, observations
-\item $\mathbf{c} = \{c_1, c_2, \cdots, c_N \}$, cluster assignments
-\item $\bm \theta = \{\theta_1, \theta_2, \cdots, \theta_K \}$, cluster parameters
-\item $G_0(\theta)$, a prior over the cluster parameters
-\item $P(c)$, a prior over the mixing distribution
-\item $F(y_n|\theta_{c_n})$, a hypothetical distribution over the observations
-\item Assumptions: each observation is conditionally independent given its latent cluster assignments and the cluster parameters
-\end{itemize}
-
-\paragraph{Posterior probability of assignments}
-
+if for all $K \in \mathbb{N}$, and all $\{ \Theta_1, \dots, \Theta_K \}$ finite partitions of $\Theta$:
 \begin{equation}
-\mathbb{P} (\mathbf{c} | \mathbf{y}) = \frac{\mathbb{P}(\mathbf{y} | \mathbf{c}) P(\mathbf{c})}{\sum_{\mathbf{c}} \mathbb{P}(\mathbf{y} | \mathbf{c}) P(\mathbf{c})},
+\left( G(\theta_1), \dots, G(\theta_K) \right) \sim \text{Dir} \left( \alpha G_0(\theta_1), \dots, \alpha G_0(\theta_K) \right),
+\end{equation}
+where $\text{Dir}(\cdot)$ denotes the \textit{Dirichelet distribution}. The Dirichelet distribution is a distribution of the standard $K-1$ simplex. Let $\bm\pi = \{ \pi_k \}_{k=1}^K$ with $\sum_{k=1}^K \pi_k = 1$ and $\forall k: \pi_k \geq 0$, and let $\bm \alpha = (\alpha_1, \dots, \alpha_K)$ with $\alpha_1, \dots, \alpha_K \geq 0$. Then
+\begin{equation}
+\mathbb{P}(\bm\pi | \bm\alpha) = \text{Dir} (\alpha_1, \dots, \alpha_K) = \frac{1}{\text{Beta} (\bm\alpha)} \prod_{k=1}^K \pi_k^{\alpha_k-1} = \frac{\Gamma \left( \sum_k \alpha_k \right)}{\prod_k \Gamma(\alpha_k)} \prod_{k=1}^K \pi_k^{\alpha_k-1},
+\end{equation}
+where $\text{Beta}(\cdot)$ is the beta function, $\Gamma(\cdot)$ is the gamma function.
+\label{eq:definitionDP}
+\end{subequations}
+
+\paragraph*{Clustering Effect}
+
+We use DP as a prior to distribution of cluster parameter $\theta$:
+\begin{equation}
+\theta | G \sim G(\cdot) \quad\text{ and }\quad G \sim \text{DP} (\cdot | G_0, \alpha).
+\label{eq:thetaDP}
+\end{equation}
+This model exhibits a ``clustering effect'' which enables us to infer number of clusters from data rather than pre-defining it. Suppose we independently draw $n$ random values $\theta^{(j)}$ from $G$ under the model (\ref{eq:thetaDP}), then Blackwell and MacQueen's urn representation theorem \cite{blackwellm73} states that, marginalising out the random measure $G$, the joint distribution of the collection of variables $\{\theta^{(1)}, \dots, \theta^{(n)}\}$ exhibits a clustering effect:
+\begin{equation}
+\mathbb{P} \left( \theta^{(j)} | \theta^{(1)}, \dots, \theta^{(j-1)} \right) \propto \alpha G_0 (\theta^{(j)}) + \sum_{l=1}^{j-1} \delta_{\theta^{(l)}} (\theta^{(j)}),
+\end{equation}
+where $\delta_{\theta^{(l)}} (\cdot)$ is a Dirac delta at ${\theta^{(l)}}$. Thus the variables $\{\theta^{(1)}, \dots, \theta^{(n)}\}$ are randomly partitioned according to which variables are equal to the same value. Moreover, let $\{ \theta_1, \dots, \theta_K \}$ denote the distinct values of the drawn samples $\{\theta^{(1)}, \dots, \theta^{(j-1)}\}$, let $\{\kappa_1, \dots, \kappa_{j-1}\}$ be the assignment variables such that $\theta^{(l)} = \theta_{\kappa_l}$. Then,
+\begin{equation}
+\mathbb{P} \left( \theta^{(j)} | \theta^{(1)}, \dots, \theta^{(j-1)} \right) \propto \frac{\alpha}{j-1+\alpha} G_0 (\theta^{(j)}) + \sum_{k=1}^{K} \frac{\vert \{ l: \kappa_l = k \} \vert}{j-1+\alpha}  \delta_{\theta^{(l)}} (\theta^{(j)}).
+\end{equation}
+This implies that the $j$-th draw has a probability of $(j-1)/(j-1+\alpha)$ to be exactly the same as some previously drawn value. This forms a natural clustering effect. In addition, with a probability of $\alpha/(j-1+\alpha)$ a new cluster will be produced with the new distinct value $\theta_{K+1}$. Hence the number of clusters is allowed to grow as new data are observed.
+
+\paragraph*{Dirichelet Process Mixture Model}
+
+Given the clustering effect exhibited in DP, we define the \textit{Dirichelet process mixture model} as:
+\begin{equation}
+\mathbf{o} | \theta \sim \phi(\cdot | \theta) \quad\text{ and }\quad  \theta | G \sim G(\cdot) \quad\text{ and }\quad G \sim \text{DP} (\cdot | G_0, \alpha),
+\label{eq:DPMM}
+\end{equation}
+recall that $\mathbf{o}$ is the observed feature vector, we remove the time subscript $t$ since the mixture model holds for all time steps.
+
+\subsubsection{Generative Process with Stick-Breaking Representation}
+
+The definition of DP stated in (\ref{eq:definitionDP}) does not provide useful information of generating a DP in practice. Sethuraman \cite{sethuraman94} proposes the \textit{stick-breaking representation} to explicitly construct a DP. Suppose there are two infinite sets of independent random variables, $\beta_k \sim \text{Beta}(1, \alpha)$ and $\theta_k \sim G_0$, $\forall k \in \{1,2,\dots\}$. The stick-breaking representation of $G$ is:
+\begin{subequations}
+\begin{equation}
+G(\cdot) = \sum_{k=1}^\infty \pi_k (\bm \beta) \delta_{\theta_k}(\cdot),
 \end{equation}
 where
 \begin{equation}
-\mathbb{P}(\mathbf{y} | \mathbf{c}) = \int_\theta \left[ \prod_{n=1}^N F(y_n | \theta_{c_n}) \prod_{k=1}^K G_0 (\theta_k) \right] \text{d} \theta
+\pi_k (\bm \beta) = \beta_k \prod_{l=1}^{k-1} (1-\beta_l).
+\end{equation}
+\end{subequations}
+Note that by construction $\sum_{k=1}^\infty \pi_k (\bm \beta) = 1$. In the DP mixture model, $\bm\pi (\bm\beta) = \{ \pi_k (\bm \beta) \}_{k=1}^\infty$ gives the mixing proportions of mixture components represented by atoms $\{ \theta_k \}_{k=1}^\infty$. By far, we can describe the feature data generative process as follows:
+\begin{enumerate}
+\item Draw an infinite collection of $\beta_k | \alpha \sim \text{Beta} (1, \alpha)$, $\forall k \in \{1,2,\dots\}$.
+\item Draw an infinite collection of $\theta_k | G_0 \sim G_0$, $\forall k \in \{1,2,\dots\}$.
+\item For $j$-th data point, $j = 1,\dots, n$:
+	\begin{enumerate}
+	\item Draw $z^{(j)} | \bm\beta \sim \text{Mult} (\bm\pi (\bm\beta))$;
+	\item Draw $\mathbf{o}^{(j)} | z^{(j)} \sim \phi ( \mathbf{o} | \theta_{z^{{(j)}}})$.
+	\end{enumerate}
+\end{enumerate} 
+
+\subsubsection{Inference}
+
+We use the variational inference for the Dirichelet process mixture model presented by Blei and Jordan \cite{blei2006}. In practice Dirichlet Process inference algorithm is approximated and uses a truncated distribution with a fixed maximum number of components, say $K_{\max}$, of $\beta$ and $\theta$. Nevertheless, the number of components actually used $K$ almost always depends on the data, and that $K \leq K_{\max}$.
+
+\subsubsection{Predictive Density}
+
+Based on model setting (\ref{eq:DPMM}), model configuration $(\phi(\cdot), \alpha, G_0)$ and observed feature data points $\{ \mathbf{x}_1, \dots, \mathbf{x}_n \}$, we are able to make inference on the posterior distribution $\mathbb{P}(\theta | \mathbf{x}_1, \dots, \mathbf{x}_n, \alpha, G_0)$. Afterwards, we can compute the predictive density:
+\begin{equation}
+\mathbb{P} (\mathbf{x} | \mathbf{x}_1, \dots, \mathbf{x}_n, \alpha, G_0) = \int \phi(\mathbf{x} | \theta ) \mathbb{P}(\theta | \mathbf{x}_1, \dots, \mathbf{x}_n, \alpha, G_0) \text{d} \theta.
 \end{equation}
 
-
-BNP clustering assume that there is an infinite number of latent clusters (namely $K \rightarrow +\infty$), but that a finite number of them is used to generate the observed data. There are an infinite number of clusters, though a finite data set only exhibits a finite number of active clusters.
-
 \subsection{Modelling Pipeline}
+
+a table show each step, input and output
 
 Feature extraction
 
