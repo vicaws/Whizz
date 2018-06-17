@@ -5,7 +5,7 @@ Customers' behaviour evolves over time as they respond to business offering and 
 
 \subsection{Representing Behaviours by Features}
 
-A \textit{feature} is an individual measurable property of a behaviour being observed, and choosing informative features is crucial for effective clustering. For example, to measure how often the pupil uses Whizz online tutorial, we can define the time spent or number of visits within a month as the feature. For each customer, we define multiple features to capture his behaviours of various aspects within a time interval. Suppose we are interested in studying bahaviours of $n$ customers in $T$ discrete consecutive time periods, and define $m$ features, then we denote the feature data as a sequence:
+A \textit{feature} is an individual measurable property of a behaviour being observed, and choosing informative features is crucial for effective clustering. For example, to measure how often the pupil uses Whizz online tutorial, we can define the time spent or number of visits within a month as the feature. For each customer, we define multiple features to capture his behaviours of various aspects within a time interval. Suppose we are interested in studying behaviours of $n$ customers in $T$ discrete consecutive time periods, and define $m$ features, then we denote the feature data as a sequence:
 \begin{equation}
 \label{eq:customerJourney}
 \left\lbrace \mathbf{X}_1, ~\mathbf{X}_2, ~\dots, ~\mathbf{X}_t, ~\dots, ~\mathbf{X}_T \right\rbrace,
@@ -71,6 +71,7 @@ Recall that feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$ observed are instance
 \begin{equation}
 \phi(\mathbf{o}_t | \theta_{qk}) =  \phi(\mathbf{o}_t | \theta (S_q, C_k)) = \mathbb{P} \left( \mathbf{o}_t | s_t = S_q, c_t = C_k \right).
 \end{equation}
+\label{eq:phi}
 \end{enumerate}
 Given the generative process described above, we can now model the state-to-observation emission probability by a mixture of densities:
 \begin{subequations}
@@ -110,6 +111,7 @@ Meanwhile, we define the churn outcome information by a set
 so that the cluster churn rate is defined as
 \begin{equation}
 \lambda_k^t = \frac{\vert \mathcal{N}_k^t \cap \mathcal{N}_\text{cancel}^t \vert}{\vert  \mathcal{N}_k^t \vert}.
+\label{eq:clusterChurn}
 \end{equation}
 Once the churn rates of all $K$ clusters, $\{ \lambda_k^t \}_{k=1}^K$, are computed, we group them and form $Q$ states. Typically $Q$ is much smaller than $K$. We denote the set of clusters consisting state $S_q$ as,
 \begin{equation}
@@ -233,12 +235,46 @@ Based on model setting (\ref{eq:DPMM}), model configuration $(\phi(\cdot), \alph
 
 \subsection{Modelling Pipeline}
 
-a table show each step, input and output
+We summrise the processes of our modelling framework as a pipeline displayed in \Cref{tab:pipeline}. We will apply this pipeline to build a churn prediction model for Whizz.
 
-Feature extraction
-
-Features distributional modelling
-
-Fitting mixture model
-
-Analytic (churn rate calculation, clusters interpretation)
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{tabular}{c|p{6cm}|p{3.5cm}|p{3.5cm}}
+\hline
+\textbf{No.} & \textbf{Process} & \textbf{Input} & \textbf{Output} \\
+\hline
+1 &
+\textbf{Feature extraction}: extract informative feature data from historical records of pupils' activity, and represent them in the suitable data structure that can be fed into the behavioral model.&
+Raw data from Whizz database that records pupils' ID, subscription history, activity history, etc. & 
+Feature data represented by $\{\mathbf{X}_t\}_{t=1}^T$, as defined in (\ref{eq:customerJourney}). \\
+\hline
+2 &
+\textbf{Feature distributional modelling}: choose the most suitable distributions for the all $m$ features to fit. Independent features can be modelled separately, while correlated features shall be modelled as a part of a multivariate distribution. &
+Feature data represented by $\{\mathbf{X}_t\}_{t=1}^T$. & 
+Density form $\phi(\cdot)$, as defined in (\ref{eq:phi}). (Note in this step we only propose the density form but not fit the distribution parameters.)\\
+\hline
+3 &
+\textbf{Fitting DP mixture model}: by assuming behaviours are generated from a Dirichelet process mixtures, make inference on parameters based on observed features.&
+Feature data represented by $\{\mathbf{X}_t\}_{t=1}^T$, feature density form $\phi(\cdot)$, and DP mixture model defined in (\ref{eq:DPMM}).& 
+Posterior distribution $\mathbb{P}(\theta | \mathbf{X}, \alpha, G_0)$, a collection of clusters parametrised by different $\theta$. \\
+\hline
+4 &
+\textbf{Fitting Markov chain}: use the identified clusters as well as churn outcome information to define states; uncover their transition probabilities. &
+Identified probabilistic clusters with density $\{ \phi(\cdot | \theta_k) \}_{k=1}^K$; churn outcome. & 
+A finite set of states $\mathcal{S} = \{S_q\}_{q=1}^Q$ and transition probability matrix $\{A_t\}_{t=1}^T$ \\
+\hline
+5.1 &
+\textbf{Analytics on behaviours}: study the properties of pupils' behaviours such as the temporal transition probabilities, how each feature impact the level of churn risk, etc. &
+States $\{S_q\}_{q=1}^Q$, transition $\{A_t\}_{t=1}^T$, cluster churn rate $\{ \lambda_k^t \}_{t,k}$ defined in (\ref{eq:clusterChurn}), etc. & 
+Temporal state transition analysis, feature analysis, etc. \\
+\hline
+5.2 &
+\textbf{Prediction on new pupils}: predict the level of churn risk for new pupils based on their behaviours with the observation-cluster-state probabilistic assignment trained from previous steps. &
+States $\{S_q\}_{q=1}^Q$, clusters parametrised by $\mathbb{P}(\theta | \mathbf{X}, \alpha, G_0)$ for $\theta \in \{\theta_k\}_{k=1}^K$, cluster-state assignment. & 
+State assignment for new pupils as well as their associated level of churn risk. \\
+\hline
+\end{tabular}
+\caption{Modelling pipeline showing processes in sequence, along with the input and output of each modular process. The last two process 5.1 and 5.2 are independent from each other and are performed for different purposes.}
+\label{tab:pipeline}
+\end{table}
