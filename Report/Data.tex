@@ -1,9 +1,10 @@
 \section{Data Description and Pre-processing}
 \label{sec:data}
 
-We will explain how we extract features from pupils' activity data. Before that, we describe the data used in our model by summary statistics. The extracted feature data will then be pre-processed to make their distributions more suitable for the nature of mixture model. 
+We will explain how we extract features from pupils' activity data (first process in the modelling pipeline in \Cref{tab:pipeline}). Before that, we describe the data used in our model by summary statistics. The extracted feature data will then be pre-processed to make their distributions more suitable for the statistical inference on mixture model. 
 
 \subsection{Scope of Data}
+\label{sec:dataScope}
 
 Whizz stores and maintains data generated from business activities in a database consisting of several relational tables. The most relevant tables we use are listed in \Cref{tab:dataTable}. The study period is from January 1st, 2014 to April 20th, 2018. The number of records within this study period in each data table is also indicated.
 
@@ -117,7 +118,7 @@ Positive integer \\
 \label{tab:featureDefinition}
 \end{table}
 
-We will restrict our study on these features. Nevertheless, our model pipeline is very flexible to accommodate more features. 
+We will restrict our study on these $m=15$ features. Nevertheless, our model pipeline is very flexible to accommodate more features or remove redundant features.
 
 \subsection{Data Transformation}
 
