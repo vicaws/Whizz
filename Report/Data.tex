@@ -148,6 +148,7 @@ Formally, we have employed 3 transformations in sequence to make our data more s
 \item \textbf{Linear transformation:} The linear transformation is applied either to ensure all data to be positive for eligibility of applying the following power transformation, or to adapt to distributional modelling choice. It has the format:
 \begin{equation}
 \mathbf{x}_{i,\text{R}}' = a_i \mathbf{1} + b_i \mathbf{x}_{i,\text{R}},
+\label{eq:linearTransformation}
 \end{equation}
 where $a_i$ and $b_i$ are constants and $\mathbf{1} \in \mathbb{R}^{1 \times n}$ is the row vector of all ones.
 \item \textbf{Box-Cox power transformation:} The Box-Cox power transformation is used to modify the distributional shape of a set of data to be more normally distributed so that the data appear to more closely meet the assumptions of a statistical inference procedure that is to be applied. It has the format:

@@ -46,7 +46,7 @@ G2 &
 16.94\% (425) \\
 \hline
 G3 &
-\textbf{Fine:} pupils having visits, and have taken exercise/lesson within the customer month. &
+\textbf{Complete Info:} pupils having visits, and have taken exercise/lesson within the customer month. &
 10.21\% (11019) \\
 \hline
 \end{tabular}
@@ -65,7 +65,7 @@ The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individu
 \label{fig:featureDistribution}
 \end{figure}
 
-Hence, we want to assume the 4 ``rate'' features to be independent from other features, and thereafter fit bespoke mixtures for each. But how likely the independence assumption holds true? We can assess the independence by at least look at the correlation structure of all features, as shown in \Cref{fig:featureCorrelation}. Incomplete rate and assess rate are very negatively correlated, but uncorrelated with other features. Fail rate and stack rate have slightly negative correlation with mark, and uncorrelated with others. Overall it seems valid to model these 4 features separately from other features, and all the other 11 features will be modelled using the multivariate Gaussian mixtures.
+Hence, we want to assume the 4 ``rate'' features to be independent from other features, and thereafter fit bespoke mixtures for each. But how likely the independence assumption holds true? We can assess the independence by at least look at the correlation structure of all features, as shown in \Cref{fig:featureCorrelation}. Incomplete rate and assess rate are very negatively correlated, but uncorrelated with other features. Fail rate and stack rate have slightly negative correlation with mark, and uncorrelated with others. Overall it seems valid to model these 4 features separately from other features, and all the other 11 features will be modelled using the multivariate Gaussian mixtures (where the dependence structure will be preserved).
 
 \begin{figure}[!h]
 \centering
@@ -74,29 +74,155 @@ Hence, we want to assume the 4 ``rate'' features to be independent from other fe
 \label{fig:featureCorrelation}
 \end{figure}
 
+To choose the suitable mixture form for each independent feature, we have a visual check on its empirical distribution and decides the type of simple distribution and the number of components. The fitting result from EM-algorithm is visualised in \Cref{fig:fitIndependentFeature}.
 
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FittingIndependentFeatures.eps}
+\caption{Fitting bespoke mixture model for independent features. Assess rate and stack rate data are reversed by their order to have a better fitting to simple distribution. This is achieved by linear transformation as described in (\ref{eq:linearTransformation}). We can see how this outperforms compared with the Gaussian kernel for these features in \Cref{fig:featureDistribution}. }
+\label{fig:fitIndependentFeature}
+\end{figure}
 
+The choice of component distributions and their quantities are listed in \Cref{tab:fitIndependentFeature}. Note that for independent features we do not infer the number of clusters from data following Baysian approach. The reason is exactly why we assume their independence from other features and model them separately: they have idiosyncratic distributions so we want to have special treatment to capture them. The side effect is the component choice might be sensitive to observed data, and anytime when new data come in we need to verify that the choice is not severely violated. Otherwise we need alter to a more suitable component choice. Fortunately, the component choice listed in \Cref{tab:fitIndependentFeature} works well for both G2 and G3 data (G1 has none of the ``rate'' features defined by construction). For each component, EM-algorithm will estimate (1) the parameters of each component distribution ($\lambda$ for exponential, $(\mu, \sigma)$ for Gaussian, etc.) and (2) the weights of each component by (locally) maximising the likelihood.
+
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{tabular}{p{3cm}|p{7cm}}
+\hline
+\textbf{Feature} & \textbf{Component distribution (Number)} \\
+\hline
+Incomplete rate &
+Uniform (1), Gaussian (3) \\
+\hline
+Fail rate &
+Uniform (2), Gaussian (2) \\
+\hline
+Assess rate &
+Uniform (1), Gaussian (3) \\
+\hline
+Stack rate &
+Exponential (1), Uniform (1), Gaussian (2) \\
+\hline
+\end{tabular}
+\caption{Component distributions and their quantity in mixture models for each independent feature.}
+\label{tab:fitIndependentFeature}
+\end{table}
+
+In summary, we split the set of $m=15$ features, by idiosyncratic attributes exhibited in their empirical distribution, into a set of $m_\mathcal{I} = 4$ independent features and $m_\mathcal{M} = 11$ multivariate Gaussian features. Let's denote the density forms for independent features as $\phi_{\mathcal{I}_i} (\cdot) : \mathbb{R} \mapsto \mathbb{R}$ for $i = 1,\dots, m_\mathcal{I}$, and the one for multivariate features as $\phi_\mathcal{M} (\cdot) : \mathbb{R}^{m_\mathcal{M}} \mapsto \mathbb{R}$. Hence, the aggregated density form is
+\begin{equation}
+\phi(\cdot) = \prod_{i=1}^{m_\mathcal{I}} \phi_{\mathcal{I}_i} (\cdot) \phi_{\mathcal{M}}(\cdot),
+\end{equation}
+where the multivariate density is a mixture of multivariate Gaussian parametrised by weights $\bm\pi$ and mean-variance pair $(\bm\mu, \bm\Sigma)$.
 
 \subsection{Fitting Dirichelet Process Mixtures}
 
-brief description of EM-algorithm and Baysian inference
+We then fit the $m_\mathcal{M}$ multivariate features by Dirichelet process mixtures, which will give estimates of weights $\bm\pi$ and posterior distribution of the Gaussian mean-variance pair $(\bm\mu, \bm\Sigma)$.
+
+A prior distribution for $(\bm\mu, \bm\Sigma)$, which is previously denoted as $G_0$ the base measure in DP, has to be pre-defined. In addition, the DP weight concentration parameter $\alpha$, and the maximum number of clusters $K_\text{max}$ need be specified. These are a part of model parameter choice. We list our choice in \Cref{tab:DPFittingPrior}.
+
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{tabular}{l|l}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+$\alpha$ &
+$1/m_\mathcal{M}$ \\
+Prior of $\bm\mu$ &
+Gaussian(mean = sample mean, covariance = identity matrix) \\
+Prior of $\bm\Gamma$ &
+Wishart(degree of freedom = $m_\mathcal{M}$, covariance = sample covariance) \\
+$K_\text{max}$ &
+30 \\
+\hline
+\end{tabular}
+\caption{Parameter choice for DP mixture model.}
+\label{tab:DPFittingPrior}
+\end{table}
+
+We use the variational inference presented by Blei and Jordan \cite{blei2006}. An example result is shown in \Cref{fig:clusteringG3}. Though $K_\text{max}=30$ are pre-defined as a upper boundary for number of components, the feature data only infer 4 clusters. We count the size of each cluster and compute the churn rate for each cluster by formula (\ref{eq:clusterChurn}).
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ClusteringG3.eps}
+\caption{Identified clusters by multivariate features in G3, their sizes and associated churn rate. The clustering result is a local optimism which is dependent on the initialisation fed into the numerical procedure. Here we show one instance. The two plots show exactly the same thing but with different scales of vertical axis. Cluster sizes can be easily compared in left plot while it is easier to compare cluster churn rate in right plot. The dashed line in right plot indicates the group-level churn rate for G3.}
+\label{fig:clusteringG3}
+\end{figure}
+
+Both cluster size and churn rate show sensible patterns and have meaningful implications:
+\begin{itemize}
+\item The purely behaviour-based model can infer clusters with very different churn rate. The highest cluster churn rate is 2.6 times higher than the lowest one, and 2.2 times higher than the group average.
+\item It is more challenging to identify pupils of higher churn probability, reflecting by the observation that the higher rate, the smaller cluster is found.
+\end{itemize} 
+
+We need combine the clusters from independent and multivariate features together. By our component distributions configuration in \Cref{tab:fitIndependentFeature}, modelling each independent feature can find 4 clusters. Plus the 4 clusters identified from the multivariate features, our model can identify up to $1024 = 4^5$ possible clusters. Nevertheless, it ends up with 268 clusters found in G3. The size and cluster churn rate are shown in \Cref{fig:clusteringG3Complete}. The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for those extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to cancel.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ClusteringG3_Complete.eps}
+\caption{Identified 268 clusters in G3, their sizes and associated churn rate.}
+\label{fig:clusteringG3Complete}
+\end{figure}
 
 \subsection{Assessing Churn Probability}
 
-(start of the supervised learning, because of the usage of churn label)
+Because we have assumed that each pupil has independent behaviours from others, and that customer month are independent in leading to churn outcome, we can interpret the cluster churn rate as the probability of churn of each individual pupil in that cluster.
 
-compute cluster churn rate
+We do clustering (independent features, then multivariate features and finally combine) for G1, G2 and G3 separately, and then translate the cluster churn rate into the individual churn probability. This allows us to have the distribution of individual churn probabilities for G1, G2, G3 and the whole combined sample. This is shown in \Cref{fig:churnProb}.
 
-interpret churn probability of individual pupil
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ChurnProbability.eps}
+\caption{Distribution (Gaussian kernel) of individual churn probability over pupils in G1, G2, G3 and in the whole combined sample. In making this plot, our algorithm and initialisation leads to 84 clusters for G1, 28 clusters for G2 and 268 clusters for G3.}
+\label{fig:churnProb}
+\end{figure}
 
-\subsection{Feature Impact}
+Looking at the distribution for all pupils in the sample, we can observe a few concentrations of pupils centered at churn probabilities approximately 0\%, 12\%, 25\%. If the behaviour based model does not work at all, the inferred churn probabilities will be purely random, which will converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:churnProb} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours than those otherwise.
 
 \subsection{Markov States Temporal Transition Analysis}
 
+We will define the Markov states by grouping together clusters of similar level of churn rate because we want states to indicate different levels of churn risk. After forming states, we can compute transition probabilities.
+
 \subsubsection{Defining Markov States}
+
+In \Cref{fig:statesDefinition} we show an example definition of states. We choose to form 4 states $S_1$, $S_2$, $S_3$ and $S_4$ by grouping clusters according to 3 anchor points: 0.3, 0.22, 0.35 (the three vertical dashed line shown on the left plot). The state churn rates are 0.0\%, 11.7\%, 25.4\% and 55.6\% respectively. Therefore, we can say $S_1$ is the safest state where pupils in this state is very unlikely to churn. In contrast, $S_4$ is a very risky state in the sense that pupils in this state are 5.5 times more likely than average to cancel the subscription.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{StatesDefinition.eps}
+\caption{Defining Markov states by grouping together pupils of similar levels of churn risk. The right plot shows the size of each state as well as churn rate. The dashed line indicates the level of population churn rate.}
+\label{fig:statesDefinition}
+\end{figure}
+
+The states' definition is dependent on the choice of anchor points. Whizz can choose the number and value of anchor points for forming states based on their needs. For example, if Whizz is interested in habits of very high-risk subscribers, they can increase the last anchor point.
+
+When we want to check the churn risk for an active customer, we feed his feature data into the trained model and reach a churn probability. The predicted churn probability for a single customer might be very noisy and inaccurate due to overfitting in the clustering process. Overfitting means that the identified clusters can correspond too closely or exactly to the training data set, and therefore may fail to predict cluster for additional data point. However, when translating the churn probability into state, we are more confident about the accuracy of the predictive state. Therefore, defining state helps practical usage of the model in labeling and predicting churn risk levels.
 
 \subsubsection{Transitional Analysis}
 
-calculate transition probability
+Following the state definitions in the previous section, we can move to the transitional analysis. We calculate the transition probabilities by formula (\ref{eq:transition}). Note that we need to add another state $S_\text{churn}$ which will only transit to itself. Hence, the complete state set is $\mathcal{S} = \{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
 
-visualise transition (matrix + Sankey plot) \cite{hmm2015}
+We compute the transition probability matrix as:
+\begin{equation}
+A = 
+\begin{bmatrix}
+0.11 & 0.03 & 0.01 & 0.01 & 0.00 \\
+0.66 & 0.68 & 0.33 & 0.28 & 0.00 \\
+0.23 & 0.17 & 0.40 & 0.15 & 0.00 \\
+0.00 & 0.00 & 0.01 & 0.01 & 0.00 \\
+0.00 & 0.12 & 0.25 & 0.56 & 1.00 \\
+\end{bmatrix},
+\end{equation}
+recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.5, trim={0 3cm 0 3cm}, clip]{Sankey.pdf}
+\caption{Sankey diagram showing the transition probabilities between states from time $t$ to time $t+1$.}
+\label{fig:sankey}
+\end{figure}
+
+
+\subsection{Feature Impact}
