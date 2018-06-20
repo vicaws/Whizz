@@ -76,7 +76,7 @@
 \usepackage[colorlinks=true,linkcolor=black,urlcolor=black,citecolor=black,anchorcolor=black]{hyperref} % Colour links.
 %%%% Should be loaded after hyperref. %%%%
 \usepackage{cleveref} % Gives smart referencing. %% After Hyperref
-\usepackage[margin=10pt,font=small, textfont=bf,labelfont=bf,labelsep=endash]{caption} % Caption figures and tables nicely. %% After cleveref.
+\usepackage[margin=0pt,font=small,labelfont=bf,labelsep=endash]{caption} % Caption figures and tables nicely. %% After cleveref.
 \usepackage[left=60mm,right=26mm,top=30mm,bottom=29mm, heightrounded, marginparwidth=41mm, marginparsep=8mm, headsep=10mm]{geometry} % Use nice margins. Does give a small change in the default page margins. 
 
 \makeatletter
@@ -104,6 +104,18 @@
 
 % Where to search for figures. 
 \graphicspath{{figures/}{figures/logos/}}
+
+% Table caption label
+\counterwithin{table}{section}
+
+% Essay-like figure style
+\usepackage{chngcntr} % Set the counter depth
+\counterwithin{figure}{section}
+\captionsetup{ % Set the caption style
+   font=footnotesize,
+   labelfont=bf,
+   singlelinecheck=false,
+}
 
 % Present the references in the order they are used.
 \bibliographystyle{unsrtnat}
