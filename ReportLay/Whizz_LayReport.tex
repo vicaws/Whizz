@@ -90,9 +90,11 @@ The distribution of the emitted behaviours from a state is assumed to be a mixtu
 
 \section{Probabilistic Clustering Using Mixture Model}
 
-A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. We choose specifically the \textit{Dirichlet Process Mixture} setting \cite{blei2006} which has two important features:
+\infommmarginnote[10em]{Dirichelet process mixture is Bayesian and can infer the number of clusters from data.}
+
+A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
 \begin{enumerate}
-\item It is Baysian and treats component parameters as random variables, of which posterior distributions will be updated from a prior as observed data coming in. 
+\item It is Bayesian and treats component parameters as random variables, of which posterior distributions will be updated from a prior as observed data coming in. 
 \item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
 The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
@@ -218,6 +220,8 @@ The model identifies a couple of clusters with 100\% and 0\% churn rate. However
 \subsection*{Churn Probability and Markov State}
 \addcontentsline{toc}{subsection}{Churn Probability and Markov State}
 
+\infommmarginnote[10em]{The behaviour based model has the predictive power to distinguish pupils with very different churn probabilities!}
+
 Because we have assumed that each pupil has independent behaviours from others, and that customer month are independent in leading to churn outcome, we can interpret the cluster churn rate as the probability of churn of each individual pupil in that cluster. This allows us to have the distribution of individual churn probabilities, shown in left of \Cref{fig:state}.
 
 Looking at the distribution of churn probabilities, we can observe a few concentrations of pupils centered at churn probabilities approximately 0\%, 12\%, 25\%. If the behaviour based model does not work at all, the inferred churn probabilities will be purely random, which will converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:state} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours than those otherwise.
@@ -240,6 +244,8 @@ Following the state definitions in the previous section, we can move to the tran
 
 The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey diagram. Churned pupils (those in $S_\text{churn}$) can not transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Barely pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
 
+\infommmarginnote[10em]{State transition probabilities help us understand behaviour dynamics.}
+
 \begin{figure}[htb]
 \centering
 \includegraphics[scale=.4, trim={0 3cm 0 3cm}, clip]{Sankey.pdf}
@@ -260,8 +266,8 @@ Dr. Junaid Mubeen, Director of Education at Whizz Education said: ``\emph{We are
 
 
 % Add the bibliography.
-\begin{small}
+%\begin{small}
 %	\nocite{*} % Publishes any unused references.
-\bibliography{references}
-\end{small}
+%\bibliography{references}
+%\end{small}
 \end{document}
