@@ -1,0 +1,161 @@
+\documentclass[english,a4,oneside,9pt]{extarticle}
+\input{preamble}
+
+\title{User Cancellation Modelling:
+\\on Clustering of Customer Behaviours}
+\author{Victor (Sheng) Wang}
+\coverimage[cover_image] % Specify your own image using [].
+
+\begin{document}
+
+\input{cover_page}
+\input{table_of_contents_page}
+
+% For proof reading
+%\doublespacing
+
+\section{Introduction}
+\subsection*{Motivation and goal}
+
+Retained customers in general create higher revenues than new customers do, and
+making a sell to a new customer can cost up to 5 times more depending on the business. Therefore, many companies form the Customer Relationship Management (CRM)
+team with a focus on customer retention strategies. A crucial step is then to identify
+high risk customers who are intending to discontinue their usage of the services. This
+assessment is better known as \textit{churn prediction}.
+
+\infommmarginnote[10em]{Churn prediction helps the business to detect customers who are likely to cancel a subscription.}
+
+Our project aims to perform the churn prediction task based on investigation
+of customers' behavioural clusterings, and formulate the processes into a scalable
+pipeline which can be easily reused, updated and extended for many applications.
+In particular, we apply the pipeline to analyse pupil subscribers' data for Whizz
+Education (referred to as ``Whizz''). Whizz provides online virtual tutorial service,
+Math-Whizz, which pupils can access by purchasing subscriptions.
+
+\subsection*{Modelling pipeline}
+
+
+We can reference loads of useful stuff like \Cref{fig:harris_cartoon,fig:side_cartoon}, and also \Cref{tab:some_useful_values}.
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{llll}
+    	Quantity        & Name      & Value                 & Units                                \\ \hline
+    	Time            & Tenure    & 12                    & \si{\micro\second}                   \\
+    	Length          & Height    & 1.82                  & \si{\centi\meter}                    \\
+    	Planks constant & $ \hbar $ & $ 6.62\cdot10^{-32} $ & \si{\meter^2.\kilogram.\second^{-1}}
+    \end{tabular}
+    \caption{Some useful values.}
+    \label{tab:some_useful_values}
+\end{table}
+
+
+\subsubsection{Very specific points}
+\todo{In the margin I can mention something I need to do.}
+\lipsum[75]
+\todo[inline=true]{Incase I need to highlight something I need to do.}
+
+
+It's all  about \marginnote{
+	\begin{center}
+		\begin{tabular}{lll}
+			 & Value & Units \\ \hline
+			c & $ 3\cdot10^{3} $ & \si{\meter.\second^{-1}} \\
+			$ \hbar $ & $ 6.62\cdot10^{-32} $ & \si{\meter^2.\kilogram.\second^{-1}} \\
+		\end{tabular}
+	\end{center}
+	\captionof{table}{Some physical constants which frequently come in handy for calculations, (although InFoMM students always non-dimensionalise).}
+}
+\begin{equation}
+ \norm{\bm{l}}_\infty^4 = \pdv[4]{f}{\bm{g}}\coloneqq x^2 + y^2 = z^2.
+\end{equation}
+
+\subsubsection{Glossary of terms}
+\addcontentsline{toc}{section}{Glossary} % To add an un-numbered section to the contents. 
+
+\begin{infommitemize}
+	\litem{Cartoon} A brilliant sketch.
+	\litem{Lay report} A smaller version of the technical report without all the maths.
+	\litem{InFoMM} A great way to get a PhD and change the world. 
+	\litem{Something a bit odd} \dummysentences{5}
+\end{infommitemize}
+
+
+\lipsum[1]
+
+\subsubsection{An odd point}
+
+\begin{figure}[htb]
+\marginnote{
+    \includegraphics[width=\linewidth]{cover_image}
+    \captionof{figure}{He is my favourite cartoonist.}
+    \label{fig:side_cartoon}}
+\centering
+\includegraphics[width=0.7\linewidth]{cover_image}
+\caption{A hilarious S.\,Harris cartoon. Here $ e = mc^2 $ or $ \bm{e = mc^2}$.}
+\label{fig:harris_cartoon}
+\end{figure} 
+
+\lipsum[1]
+
+\infommmarginnote[3mm]{I love these side bubbles! They're awesome and very helpful.
+	$$ \int_{\mathbb{R}}^{\infty^+} f(z) \dd(z)  = 0
+	$$}
+\lipsum[1]
+
+
+\section{Some crazy maths}
+
+\Cref{code:example} is a nice example of using Python rather than Matlab.
+
+\begin{lstfloat}[htb]
+\begin{lstlisting}[language=Python, caption={[Example prime number generator]Some example python code, incase we wanted to show the company some awesome programming idea.}, label={code:example}, captionpos=b]
+def prime_numbers():
+	"""
+	A prime number generator.
+	:return: Int, prime number.
+	"""
+	x = 2
+	primes = [x]
+	yield x  # We the first prime number.
+	while True:
+		if x in primes:
+			x += 1
+		else:
+			is_prime = True  
+			for p in primes:
+				if x % p == 0:
+					is_prime = False  # The number is not prime.
+					x += 1
+					break  # We do not need further checks.
+			if is_prime:
+				primes.append(x)
+				yield x
+\end{lstlisting}
+\end{lstfloat}
+
+\blindmathpaper
+
+\section{Discussion, conclusions \& recommendations}
+\dummysentences{3}
+
+Dr. Junaid Mubeen, Director of Education at Whizz Education said: ``\emph{We are very pleased with Victor's contribution. He has addressed our key requirement of developing a model that allows us to predict the likelihood of home users cancelling their subscription from one month to the next. Discussions are already underway with our Development and Marketing teams to understand how we can make use of Victor's model on a continual basis to turn around customers ``at risk'' of cancelling. Victor has also illuminated a number of Machine Learning strategies that we can see having applications in other business problems.}''
+
+
+\cite{bradley2011parallelization}
+
+
+% Add the bibliography.
+\begin{small}
+%	\nocite{*} % Publishes any unused references.
+\bibliography{references}
+\end{small}
+
+\section{COMMENTS ON THE REPORT}
+For the \textbf{final} editing:
+\begin{itemize}
+    \item Ensure the side bubbles are correctly centred and don't spill over any pages. 
+    \item Ensure there are no dangling headers (This might require inserting a \verb|\clearpage| command.)
+\end{itemize}
+\clearpage
+\end{document}

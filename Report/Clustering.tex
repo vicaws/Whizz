@@ -61,7 +61,7 @@ The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individu
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.7, trim={0 6cm 0 0}, clip]{FeatureDistribution.eps}
-\caption{Empirical distribution (histogram) and Gaussian kernel for all features.}
+\caption{Empirical distribution (histogram) and Gaussian kernel for all features in G3.}
 \label{fig:featureDistribution}
 \end{figure}
 
@@ -202,7 +202,7 @@ When we want to check the churn risk for an active customer, we feed his feature
 
 \subsubsection{Transitional Analysis}
 
-Following the state definitions in the previous section, we can move to the transitional analysis. We calculate the transition probabilities by formula (\ref{eq:transition}). Note that we need to add another state $S_\text{churn}$ which will only transit to itself. Hence, the complete state set is $\mathcal{S} = \{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
+Following the state definitions in the previous section, we can move to the transitional analysis. We calculate the transition probabilities by formula (\ref{eq:transition}). Note that we need to add another state $S_\text{churn}$ which will only transit to itself (called an absorbing state, a state that once entered cannot be left). Hence, the complete state set is $\mathcal{S} = \{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
 
 We compute the transition probability matrix as:
 \begin{equation}
@@ -215,14 +215,34 @@ A =
 0.00 & 0.12 & 0.25 & 0.56 & 1.00 \\
 \end{bmatrix},
 \end{equation}
-recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$.
+recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$. The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey diagram. Churned pupils (those in $S_\text{churn}$) can not transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Barely pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.5, trim={0 3cm 0 3cm}, clip]{Sankey.pdf}
-\caption{Sankey diagram showing the transition probabilities between states from time $t$ to time $t+1$.}
+\caption{Sankey diagram showing the transition probabilities between states from time $t$ to time $t+1$. The thickness of each band represents the magnitude of the transition probability from the state on the left to the state on the right.}
 \label{fig:sankey}
 \end{figure}
 
-
 \subsection{Feature Impact}
+
+We can examine how features play a role in differentiate the churn risk of pupils. A simple and useful examination is to compare how features distribute differently for different states. We have shown the distributions of multivariate features in \Cref{fig:ftrImpMulti}.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FeatureImpactMultivariate.pdf}
+\caption{Distributions of features for $S_1$ and $S_4$. We flag distribution for $S_1$, the safest state, by green color and $S_4$, the riskiest state, by red color.}
+\label{fig:ftrImpMulti}
+\end{figure}
+
+Multiple implications can be drawn. If the red and green distributions of some feature do not deviate too much from each other, we can conclude that this feature might not be very informative of distinguishing the states. For example, age, age difference, progress level appear to be not informative. Mean and variations of the distributions are useful to tell how features influence churn risk. For example, pupils having more visits, or spending more time are less likely to churn. 
+
+For each of the independent features, we can find the most frequent component for each state. This is shown in \Cref{fig:ftrImpIndep}. Pupils having a lot of exercises/lessons incomplete, no fail outcome, moderately high stack rate, full assessment are most likely to churn.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FeatureImpactIndependent.pdf}
+\caption{Distributions of features for $S_1$ and $S_4$. We flag the most frequent component for $S_1$, the safest state, by green color and $S_4$, the riskiest state, by red color. Note that the data for stack rate and assess rate are reversed by order.}
+\label{fig:ftrImpIndep}
+\end{figure}
+

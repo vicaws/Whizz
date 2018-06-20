@@ -1,0 +1,38 @@
+% The cover page is a designed to look best on A4 and is designed to be a
+% "What you see is what you get".
+\thispagestyle{empty} % 'gobble' pagestyle throws issues with nomencl package. 
+\afterpage{
+%\pagestyle{empty}
+\newgeometry{left = 20mm, right = 20mm, top = 15mm, bottom = 10mm}
+
+\newgeometry{left = 20mm, right = 20mm, top = 30mm, bottom = 30mm}
+\pagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+\draw [line width=2mm, oxfordblue]
+($ (current page.south west) + (8mm, 8mm) $)
+rectangle
+($ (current page.north east) + (-8mm, -8mm)$);
+\node[anchor=north west, xshift=10mm, yshift=-10mm] at (current page.north west) {\includegraphics[width=0.3\linewidth]{epsrc_logo}};
+\node[anchor=north east, xshift=-10mm, yshift=-10mm] at (current page.north east) {\includegraphics[width=0.3\linewidth]{infomm_logo_blue}};
+\node[anchor=south west, xshift=10mm, yshift=10mm] at (current page.south west) {\includegraphics[width=0.3\linewidth]{oxford_logo_blue_long}};
+\node[anchor=south east, xshift=-10mm, yshift=10mm] at (current page.south east) {\includegraphics[width=0.4\linewidth]{whizz_logo_long}};
+\end{tikzpicture}
+
+\begin{center}
+\vfill
+{\fontsize{25}{28}\selectfont\color{oxfordblue}\textbf{EPSRC Centre for Doctoral Training in Industrially Focused Mathematical Modelling}}
+\vfill
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{\thecoverimage}
+\end{figure}
+\vfill
+{\fontsize{25}{28}\selectfont\color{oxfordblue}\textbf{\thetitle}}\\
+\vfill
+{\fontsize{20}{25}\selectfont\color{oxfordblue}\color{oxfordblue}\textbf{\theauthor}}
+\vfill
+\end{center}
+\restoregeometry
+}
+\clearpage
+	
