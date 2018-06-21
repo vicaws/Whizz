@@ -148,16 +148,16 @@ If the Markov chain is assumed to be stationary, then we estimate
 
 A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. Practical calibration of the mixture model faces many choices such as the kernel density $\phi(\cdot)$, the number of clusters $K$, etc. A fundamental model setting is however the choice of frequentist or Bayes approach to estimate model parameters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
 \begin{enumerate}
-\item It is Baysian and treats $\theta$ as a random variable, of which distributions will be updated from a prior as observed data coming in. 
+\item It is Bayesian and treats $\theta$ as a random variable, of which distributions will be updated from a prior as observed data coming in. 
 \item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
 The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it does not worry about the unobserved data and can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
 
-\subsubsection{Dirichelet Process Mixture Model}
+\subsubsection{Dirichlet Process Mixture Model}
 
 \paragraph*{Definitions}
 
-A Dirichelet Process (DP) is a distribution of a random measure. Let $G_0$ be a base distribution (measure) for our cluster density parameter $\theta \in \Theta$, a measurable space, and let $\alpha$ be a positive, real-valued scalar. A random measure $G$ is then distributed according to \textit{Dirichelet Process} with scaling parameter $\alpha$ and base measure $G_0$:
+A Dirichlet Process (DP) is a distribution of a random measure. Let $G_0$ be a base distribution (measure) for our cluster density parameter $\theta \in \Theta$, a measurable space, and let $\alpha$ be a positive, real-valued scalar. A random measure $G$ is then distributed according to \textit{Dirichlet Process} with scaling parameter $\alpha$ and base measure $G_0$:
 \begin{subequations}
 \begin{equation}
 G \sim \text{DP}(\cdot | G_0, \alpha),
@@ -166,7 +166,7 @@ if for all $K \in \mathbb{N}$, and all $\{ \Theta_1, \dots, \Theta_K \}$ finite 
 \begin{equation}
 \left( G(\theta_1), \dots, G(\theta_K) \right) \sim \text{Dir} \left( \alpha G_0(\theta_1), \dots, \alpha G_0(\theta_K) \right),
 \end{equation}
-where $\text{Dir}(\cdot)$ denotes the \textit{Dirichelet distribution}. The Dirichelet distribution is a distribution of the standard $K-1$ simplex. Let $\bm\pi = \{ \pi_k \}_{k=1}^K$ with $\sum_{k=1}^K \pi_k = 1$ and $\forall k: \pi_k \geq 0$, and let $\bm \alpha = (\alpha_1, \dots, \alpha_K)$ with $\alpha_1, \dots, \alpha_K \geq 0$. Then
+where $\text{Dir}(\cdot)$ denotes the \textit{Dirichlet distribution}. The Dirichlet distribution is a distribution of the standard $K-1$ simplex. Let $\bm\pi = \{ \pi_k \}_{k=1}^K$ with $\sum_{k=1}^K \pi_k = 1$ and $\forall k: \pi_k \geq 0$, and let $\bm \alpha = (\alpha_1, \dots, \alpha_K)$ with $\alpha_1, \dots, \alpha_K \geq 0$. Then
 \begin{equation}
 \mathbb{P}(\bm\pi | \bm\alpha) = \text{Dir} (\alpha_1, \dots, \alpha_K) = \frac{1}{\text{Beta} (\bm\alpha)} \prod_{k=1}^K \pi_k^{\alpha_k-1} = \frac{\Gamma \left( \sum_k \alpha_k \right)}{\prod_k \Gamma(\alpha_k)} \prod_{k=1}^K \pi_k^{\alpha_k-1},
 \end{equation}
@@ -191,9 +191,9 @@ where $\delta_{\theta^{(l)}} (\cdot)$ is a Dirac delta at ${\theta^{(l)}}$. Thus
 \end{equation}
 This implies that the $j$-th draw has a probability of $(j-1)/(j-1+\alpha)$ to be exactly the same as some previously drawn value. This forms a natural clustering effect. In addition, with a probability of $\alpha/(j-1+\alpha)$ a new cluster will be produced with the new distinct value $\theta_{K+1}$. Hence the number of clusters is allowed to grow as new data are observed.
 
-\paragraph*{Dirichelet Process Mixture Model}
+\paragraph*{Dirichlet Process Mixture Model}
 
-Given the clustering effect exhibited in DP, we define the \textit{Dirichelet process mixture model} as:
+Given the clustering effect exhibited in DP, we define the \textit{Dirichlet process mixture model} as:
 \begin{equation}
 \mathbf{o} | \theta \sim \phi(\cdot | \theta) \quad\text{ and }\quad  \theta | G \sim G(\cdot) \quad\text{ and }\quad G \sim \text{DP} (\cdot | G_0, \alpha),
 \label{eq:DPMM}
@@ -237,7 +237,7 @@ Based on model setting (\ref{eq:DPMM}), model configuration $(\phi(\cdot), \alph
 \subsection{Modelling Pipeline}
 \label{sec:modelPipeline}
 
-We summrise the processes of our modelling framework as a pipeline displayed in \Cref{tab:pipeline}. We will apply this pipeline to build a churn prediction model for Whizz.
+We summarise the processes of our modelling framework as a pipeline displayed in \Cref{tab:pipeline}. We will apply this pipeline to build a churn prediction model for Whizz.
 
 \begin{table}[!h]
 \centering
@@ -257,7 +257,7 @@ Feature data represented by $\{\mathbf{X}_t\}_{t=1}^T$. &
 Density form $\phi(\cdot)$, as defined in (\ref{eq:phi}). (Note in this step we only propose the density form but not fit the distribution parameters.)\\
 \hline
 3 &
-\textbf{Fitting DP mixture model}: by assuming behaviours are generated from a Dirichelet process mixtures, make inference on parameters based on observed features.&
+\textbf{Fitting DP mixture model}: by assuming behaviours are generated from a Dirichlet process mixtures, make inference on parameters based on observed features.&
 Feature data represented by $\{\mathbf{X}_t\}_{t=1}^T$, feature density form $\phi(\cdot)$, and DP mixture model defined in (\ref{eq:DPMM}).& 
 Posterior distribution $\mathbb{P}(\theta | \mathbf{X}, \alpha, G_0)$, a collection of clusters parametrised by different $\theta$. \\
 \hline
