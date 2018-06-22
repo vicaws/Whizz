@@ -22,7 +22,34 @@ In the train step, we need select data of proper pupils to feed into the model. 
 \end{itemize}
 The model can be used in the predict step to map from a pupil's feature data to a state assignment as well as an estimated churn probability. Moreover, we can locate the relative level of the pupil's features in the population distribution, thus figuring out the possible reasons for the resulting churn risk.
 
-An important note is that our model is trained on pupils' monthly-aggregated behaviours, such as total time spent in using the service, the average marks obtained, etc. Hence, the prediction shall only be made on monthly-aggregated behaviour data. This seems contradict to prediction task, since we do not want to predict the churn risk on the last day of the current prediction when the churn outcome has already been or will be immediately known. A suggested remedy is to aggregate behaviours on calendar month for prediction task. For example, suppose on 2018-06-20, we would like to assess the churn risk for a pupil whose current subscription will expire on 2018-06-30. Then we can collect its behaviours from 2018-5-19 to 2018-06-19 and feed into the model to make prediction. This remedy, however, assumes the pupil has at least had renewed his subscription once. In the case where the pupil is a new joiner, we can scale his 20-day behaviours to 30-day behaviours as a proxy. For example, if he has spent 30 hours in using the service for 20 days, we can assume he will spend 45 hours for this customer month.
+Since we model the behaviour dynamics as Markov chain and have computed the transition matrix, we are able to compute the expected churn risk in future time steps. Suppose we define a finite set of states by $\mathcal{S} = \{S_q\}_{q=1}^Q$. At time $t$, we are interested in assessing a pupil's churn risk as of $t+1$, $t+2$, ..., or $t+\Delta t$ for any integer $\Delta t \geq 1$. Feeding the pupil's feature data into the mixture model will give us the state assignment $\mathbf{s}_{t+1} = [s_{t+1,1} ~\cdots ~s_{t+1,Q}]^\top $:
+\begin{equation}
+s_{t+1,q} = 
+	\begin{cases}
+	1, \quad \text{if the assigned state is } S_q, \\
+	0, \quad \text{otherwise}. 
+	\end{cases}
+\end{equation}
+Each state corresponds to a churn risk. If we denote the state churn risk by a column vector $\bm\lambda = [\lambda_1 ~\cdots ~\lambda_Q]^\top$, and the predicted churn risk for the pupils by $r_{t+1}$, then the churn risk for the pupil at time $t+1$ is
+\begin{equation}
+r_{t+1} = \bm\lambda^\top \mathbf{s}_{t+1}.
+\end{equation}
+More generally, the churn risk for the pupil at time $t+\Delta t$ for any integer $\Delta t \geq 1$ is
+\begin{equation}
+r_{t+\Delta t} = \bm\lambda^\top A^{\Delta t -1 } \mathbf{s}_{t+1}.
+\label{eq:dynamics}
+\end{equation}
+
+We apply formula (eq:dynamics) and obtain the evolution of expected churn risk in the next 25 months, as shown in \Cref{fig:dynamics}.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{Dynamics.pdf}
+\caption{Predicted churn risk evolution for pupils assigned to different states. Eventually any pupil will churn almost surely, regardless which state he is in.}
+\label{fig:dynamics}
+\end{figure}
+
+An important note is that our model is trained on pupils' monthly-aggregated behaviours, such as total time spent in using the service, the average marks obtained, etc. Hence, the prediction shall only be made on monthly-aggregated behaviour data. This seems contradict to prediction task, since we do not want to predict the churn risk on the last day of the current prediction when the churn outcome has already been or will be immediately known. A suggested remedy is to aggregate behaviours on calendar month for prediction task. For example, suppose on 2018-06-20, we would like to assess the churn risk for a pupil whose current subscription will expire on 2018-06-30. Then we can collect his behaviours from 2018-5-19 to 2018-06-19 and feed into the model to make prediction. This remedy, however, assumes the pupil has at least had renewed his subscription once. In the case where the pupil is a new joiner, we can scale his 20-day behaviours to 30-day behaviours as a proxy. For example, if he has spent 30 hours in using the service for 20 days, we can assume he will spend 45 hours for this customer month.
 
 \subsection{Evaluating Overfitting}
 

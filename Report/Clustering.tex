@@ -5,7 +5,7 @@ Given extracted feature data, we can model features' distributions, fit DP mixtu
 
 \subsection{Customer Month Independence}
 
-How does cancellation rate change over time? To see this, we group subscribers by customer month and calculate the number of each group. Suppose there are $n_t$ pupils in customer month $t$ for $t=1,\dots,T$, then the cancellation rate at $t$ is defined as $n_{t-1} / n_t$ for $t=2,\dots, T$. Recall from section \ref{sec:dataScope} that $n_1 = 2672$ and $T = 49$. We plot the evolution of number of subscribers and cancellation rate in \Cref{fig:cancellationRate}.
+How does cancellation rate change over time? To see this, we group subscribers by customer month and calculate the number of each group. Suppose there are $n_t$ pupils in customer month $t$ for $t=1,\dots,T$, then the cancellation rate at $t$ is defined as $1-n_{t-1} / n_t$ for $t=2,\dots, T$. Recall from section \ref{sec:dataScope} that $n_1 = 2672$ and $T = 49$. We plot the evolution of number of subscribers and cancellation rate in \Cref{fig:cancellationRate}.
 
 \begin{figure}[!h]
 \centering
@@ -16,7 +16,7 @@ How does cancellation rate change over time? To see this, we group subscribers b
 
 The vertical axis of the subscriber number plot is log-scaled. We observe that the subscriber numbers over time fit a straight dashed line very well, inferring the number is exponentially decreasing. This is again verified by a relatively constant cancellation rate over time. There comes a lot of noises when customer month is larger than 25, because after that the number of live subscribers has reduced to less than 50 so noise dominates the estimate.
 
-Within each customer month we can assume each customer in independent from others, then we can interpret the churn rate of the customer month group as the churn probability of each individual in that group. Hence, this observation leads to a very important assumption which greatly simplifies our model: each customer's cancellation outcome is only dependent on his features within the current customer month, not further previous ones. In other words, customer months are independent in leading to churn outcome, so we can consider all customer months together and perform a single clustering. This again implies that the Markov chain is stationary, which means $A_1 = \cdots = A_T$.
+Within each customer month we can assume each customer in independent from others, then we can interpret the churn rate of the customer month group as the churn probability of each individual in that group. Hence, this observation leads to a very important assumption which greatly simplifies our model: each customer's cancellation outcome is only dependent on his features within the current customer month, not further previous ones. In other words, customer months are independent in leading to churn outcome, so we can consider all customer months together and perform a single clustering. %This again implies that the Markov chain is stationary, which means $A_1 = \cdots = A_T$.
 
 As a result, in the following analysis, we will stack feature data time series $\left\lbrace \mathbf{X}_1, ~\mathbf{X}_2, ~\dots, ~\mathbf{X}_t, ~\dots, ~\mathbf{X}_T \right\rbrace$ into a single matrix $\mathbf{X} \in \mathbb{R}^{m \times n}$ with $n = \sum_{t=1}^{T} n_t$. We compute that $n=17861$.
 
@@ -56,7 +56,7 @@ G3 &
 
 \subsubsection{Independent and Multivariate Features}
 
-The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individual feature is assumed to be a mixture of normal distributions. This appears unrealistic, even after the Box-Cox transformation. We display the empirical distributions for all features in \ref{fig:featureDistribution}. The 4 ``rate'' features at the top apparently violate the Gaussian mixture assumption. The problem comes from the phenomenon called	single-value-inflation, where a single value such as 0 has significantly frequent observations. In fact, mixture model is an ideal for modelling such distribution since it allows the overall distribution to be consisted of several different simpler distribution (not only Gaussian). We can model this feature separately from other features by assuming it is independent of other features.
+The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individual feature is assumed to be a mixture of normal distributions. This appears unrealistic, even after the Box-Cox transformation. We display the empirical distributions for all features in \Cref{fig:featureDistribution}. The four ``rate'' features at the top apparently violate the Gaussian mixture assumption. The problem comes from the phenomenon called single-value-inflation, where a single value such as 0 has significantly frequent observations. In fact, mixture model is an ideal for modelling such distribution since it allows the overall distribution to be consisted of several different simpler distribution (not only Gaussian). We can model this feature separately from other features by assuming that it is independent of other features.
 
 \begin{figure}[!h]
 \centering
@@ -65,7 +65,7 @@ The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individu
 \label{fig:featureDistribution}
 \end{figure}
 
-Hence, we want to assume the 4 ``rate'' features to be independent from other features, and thereafter fit bespoke mixtures for each. But how likely the independence assumption holds true? We can assess the independence by at least look at the correlation structure of all features, as shown in \Cref{fig:featureCorrelation}. Incomplete rate and assess rate are very negatively correlated, but uncorrelated with other features. Fail rate and stack rate have slightly negative correlation with mark, and uncorrelated with others. Overall it seems valid to model these 4 features separately from other features, and all the other 11 features will be modelled using the multivariate Gaussian mixtures (where the dependence structure will be preserved).
+Hence, we want to assume the four ``rate'' features to be independent from other features, and thereafter fit bespoke mixtures for each. But how likely the independence assumption holds true? We can assess the independence by at least look at the correlation structure of all features, as shown in \Cref{fig:featureCorrelation}. Incomplete rate and assess rate are very negatively correlated, but uncorrelated with other features. Fail rate and stack rate have slightly negative correlation with mark, and uncorrelated with others. Overall it seems valid to model these 4 features separately from other features, and all the other 11 features will be modelled using the multivariate Gaussian mixtures (where the dependence structure will be preserved).
 
 \begin{figure}[!h]
 \centering
@@ -157,12 +157,12 @@ Both cluster size and churn rate show sensible patterns and have meaningful impl
 \item It is more challenging to identify pupils of higher churn probability, reflecting by the observation that the higher rate, the smaller cluster is found.
 \end{itemize} 
 
-We need combine the clusters from independent and multivariate features together. By our component distributions configuration in \Cref{tab:fitIndependentFeature}, modelling each independent feature can find 4 clusters. Plus the 4 clusters identified from the multivariate features, our model can identify up to $1024 = 4^5$ possible clusters. Nevertheless, it ends up with 268 clusters found in G3. The size and cluster churn rate are shown in \Cref{fig:clusteringG3Complete}. The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for those extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to cancel.
+We need combine the clusters from independent and multivariate features together. By our component distributions configuration in \Cref{tab:fitIndependentFeature}, modelling each independent feature can find 4 clusters. Plus the 4 clusters identified from the multivariate features, our model can identify up to $1024 = 4^5$ possible clusters. Nevertheless, it ends up with 268 clusters found in G3. The average size and cluster churn rate are shown in \Cref{fig:clusteringG3Complete}. By ``average'', we compute the average size of clusters with the same churn rate. The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for those extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to cancel.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ClusteringG3_Complete.eps}
-\caption{Identified 268 clusters in G3, their sizes and associated churn rate.}
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ClusteringG3_Complete.pdf}
+\caption{Identified clusters in G3, their average sizes and associated churn rate.}
 \label{fig:clusteringG3Complete}
 \end{figure}
 
@@ -179,7 +179,7 @@ We do clustering (independent features, then multivariate features and finally c
 \label{fig:churnProb}
 \end{figure}
 
-Looking at the distribution for all pupils in the sample, we can observe a few concentrations of pupils centered at churn probabilities approximately 0\%, 12\%, 25\%. If the behaviour based model does not work at all, the inferred churn probabilities will be purely random, which will converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:churnProb} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours than those otherwise.
+Looking at the distribution for all pupils in the sample, we can observe a few concentrations of pupils centered at churn probabilities approximately 12\%, 25\%. If the behaviour based model does not work at all, the inferred churn probabilities will be purely random, which will converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:churnProb} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours than those otherwise.
 
 \subsection{Markov States Temporal Transition Analysis}
 
@@ -191,7 +191,7 @@ In \Cref{fig:statesDefinition} we show an example definition of states. We choos
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{StatesDefinition.eps}
+\includegraphics[scale=.7, trim={0 0 0 0}, clip]{StatesDefinition.pdf}
 \caption{Defining Markov states by grouping together pupils of similar levels of churn risk. The right plot shows the size of each state as well as churn rate. The dashed line indicates the level of population churn rate.}
 \label{fig:statesDefinition}
 \end{figure}
@@ -226,7 +226,7 @@ recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$. The transition pr
 
 \subsection{Feature Impact}
 
-We can examine how features play a role in differentiate the churn risk of pupils. A simple and useful examination is to compare how features distribute differently for different states. We have shown the distributions of multivariate features in \Cref{fig:ftrImpMulti}.
+We can examine how features play a role in differentiating the churn risk of pupils. A simple and useful examination is to compare how features distribute differently for different states. We have shown the distributions of multivariate features in \Cref{fig:ftrImpMulti}.
 
 \begin{figure}[!h]
 \centering

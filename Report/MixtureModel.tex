@@ -25,13 +25,13 @@ Due to the inconsistency present in journeys of different customers, we align th
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.75]{CustomerMonth.png}
-\caption{Change reference from calendar month to customer month. Customer A, B and C have very different journeys in the sense of subscription start and end dates. Each block represents customer's monthly features. Under calendar month reference, we have to choose studying months from March to August to cover all activities. This choice results in irregular temporal distribution of missing information for all 3 customers. After changing the reference to customer month, features are aligned by customer month and therefore comparable. Moreover, the missing information only occurs after the customer churns. It can also handle discontinuous subscriptions like the case of customer B.}
+\caption{Change reference from calendar month to customer month. Customer A, B and C have very different journeys in the sense of subscription start and end dates. Each block represents customer's monthly features. Under calendar month reference, we have to choose studying months from March to August to cover all activities. This choice results in irregular temporal distribution of missing information for all 3 customers. After changing the reference to customer month, features are aligned by customer month and therefore comparable. Moreover, the missing information only occurs after the customer churns. It can also handle discontinuous subscriptions like the case of customer B (very rare case though).}
 \label{fig:customerMonth}
 \end{figure}
 
 \subsubsection{Markov Chain - Dynamic Model for Behavioural Changes}
 
-We assume that customers with intentions to churn exhibit different behaviours than others do. Behaviours are different distributionally, and generated from a finite number of \textit{states}. Then the discrete time behaviour of each customer results in a chain of states over time. This formulates into a discrete-time Markov chain with states transiting over time, where each state emits distinguishable behaviour distribution from others. An example is given in \Cref{fig:markovChain}. In brief, a Markov chain is a stochastic process characterised by \textit{transition} and \textit{emission} probabilities.
+We assume that customers with intention to churn exhibit different behaviours than others do. Behaviours are different distributionally, and generated from a finite number of \textit{states}. Then the discrete time behaviour of each customer results in a chain of states over time. This formulates into a discrete-time Markov chain with states transiting over time, where each state emits distinguishable behaviour distribution from others. An example is given in \Cref{fig:markovChain}. In brief, a Markov chain is a stochastic process characterised by \textit{transition} and \textit{emission} probabilities.
 
 \begin{figure}[!h]
 \centering
@@ -89,7 +89,7 @@ The problem is how to estimate the transition probabilities and parameters in th
 
 \paragraph*{Decoding Emission}
 
-Ideally from the perspective of practical application of the model, we wish to encode a finite number of states representing different levels of churn risk. As a consequence, the prediction task is to find out the state that the pupil belongs to and therefore assigning the associated risk label. Hence, we choose not to infer states purely from observed behavioural data, but define states by also incorporating churn outcome information. At high level, we take two steps to estimate the parameters in the emission term:
+Ideally a business wishes to encode a finite number of states representing different levels of churn risk. As a consequence, the prediction task is to find out the state that the pupil belongs to and therefore assigning the associated risk label. Hence, we choose not to infer states purely from observed behavioural data, but define states by also incorporating churn outcome information. At high level, we take two steps to estimate the parameters in the emission term:
 \begin{enumerate}
 \item We look at the behavioural distribution without conditioning on state, namely,
 \begin{equation}
@@ -98,7 +98,7 @@ b(\mathbf{o}_t) = \mathbb{P} (\mathbf{o}_t) = \sum_{k=1}^K \mathbb{P} (c_t = C_k
 \end{equation}
 Then we estimate $\{ \pi_k, \theta_k \}_{k=1}^K$ from observed feature data $\mathbf{X}_t$ with pre-defined multivariate kernel density $\phi(\cdot)$. This will be elaborated in section \ref{sec:mixtureModel}.
 
-\item The previous step gives not only the weights $\pi$ and cluster density $\phi(\cdot | \theta)$, but also a consequential cluster assignment of all customers. If we know the churn outcome for all customers, then we can calculate the proportion of churned customers, or churn rate, within each cluster. Thereafter, we can form states by grouping together clusters of similar level of churn rate.
+\item The previous step gives not only the weights $\pi$ and cluster density $\phi(\cdot | \theta)$, but also a consequential cluster assignment of all customers. If we know the churn outcome for all customers, then we can calculate the proportion of churned customers, or churn rate, within each cluster. Thereafter, we can form states by grouping together clusters of similar level of churn rates.
 
 Formally, we define the set of customers who have been assigned into cluster $C_k$ as
 \begin{equation}
@@ -146,10 +146,10 @@ If the Markov chain is assumed to be stationary, then we estimate
 \subsection{Probabilistic Clustering Using Mixture Model}
 \label{sec:mixtureModel}
 
-A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. Practical calibration of the mixture model faces many choices such as the kernel density $\phi(\cdot)$, the number of clusters $K$, etc. A fundamental model setting is however the choice of frequentist or Bayes approach to estimate model parameters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
+A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of clusters to observations. Practical calibration of the mixture model faces many choices such as the kernel density $\phi(\cdot)$, the number of clusters $K$, etc. A fundamental model setting is however the choice between the frequentist or the Bayes approach to estimate model parameters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
 \begin{enumerate}
-\item It is Bayesian and treats $\theta$ as a random variable, of which distributions will be updated from a prior as observed data coming in. 
-\item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
+\item It is Bayesian and treats $\theta$ as a random variable, of which posterior distributions will be updated from a prior as observed data coming in. 
+\item The Dirichlet process (DP) is used as a nonparametric prior, resulting in that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
 The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it does not worry about the unobserved data and can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
 
