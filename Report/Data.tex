@@ -28,7 +28,7 @@ Details of each visit activity for each pupil during his subscription period. Th
 1,640,080 \\
 \hline
 \end{tabular}
-\caption{Description of data tables. The number of records within the study period 2014-01-01 $\sim$ 2018-04-20 in each data table is also indicated.}
+\caption{Description of data tables. The number of records within the study period 2014-01-01 to 2018-04-20 in each data table is also indicated.}
 \label{tab:dataTable}
 \end{table}
 
@@ -44,7 +44,7 @@ As a result, we finally have 2,672 pupils' data including 17,861 subscription re
 
 Based on the scope of data, we define features from lesson history records. Since we split pupil's activities into monthly time period, then all features measure monthly-aggregated behaviours. We describe the feature name, measurement and value range in \Cref{tab:featureDefinition}.
 
-Indeed, Whizz's data records contain rich information and the features listed in \Cref{tab:featureDefinition} are only a part of them. We view these features as most straightforward and relevant by consulting industrial expertise from staff at Whizz.
+Indeed, Whizz's data records contain rich information and the features listed in \Cref{tab:featureDefinition} are only a part of them. We view these features as the most relevant by consulting the industrial expertise from staff at Whizz.
 
 \begin{table}[!h]
 \centering
@@ -124,7 +124,7 @@ We will restrict our study on these $m=15$ features. Nevertheless, our model pip
 
 In general, learning algorithms benefit from \textit{transformation} and \textit{standardisation} of the data set. In particular, because our model relies on appropriate distributional assumptions made for features, it is important to make sure features' empirical distribution not to deviate too much from the distributional assumptions.
 
-To illustrate the benefit of data transformation, we take the feature ``usage time'' as an example and compare the empirical distributions of raw data and transformed data in \ref{fig:boxcox}. The simplest distributional assumption is that each mixture component follows a Gaussian. We can hardly detect Gaussian component from the histogram of the raw data, while the transformed data appear more reasonably to be modelled as mixture of Gaussians. 
+To illustrate the benefit of data transformation, we take the feature ``usage time'' as an example and compare the empirical distributions of raw data and transformed data in \Cref{fig:boxcox}. The simplest distributional assumption is that each mixture component follows a Gaussian. We can hardly detect Gaussian component from the histogram of the raw data, while the transformed data appear more reasonably to be modelled as mixture of Gaussians. 
 
 \begin{figure}[!h]
 \centering
@@ -142,7 +142,7 @@ Standardisation of the data set is also important for our model. The motivation 
 \label{fig:dataStandardisation}
 \end{figure}
 
-Formally, we have employed 3 transformations in sequence to make our data more suitable for mixture model learning task. Recall that we denote the feature data by a matrix $\mathbf{X} = (x_{ij}) \in \mathbb{R}^{m \times n}$ (forget about the time subscript as  in (\ref{eq:customerJourney}) for a moment), which describes $n$ observed values for each of the $m$ features. In addition, we denote the $i$-th row of $\mathbf{X}$ by $\mathbf{x}_{i,\text{R}} = [x_{i1} ~x_{i2} ~\cdots ~x_{in}]$. The transformations are performed for each feature separately, resulting in different sets of transformation parameters for different features. To be specific, for $i$-th feature we describe the transformations as following.
+Formally, we have employed 3 transformations in sequence to make our data more suitable for mixture model learning task. Recall that we denote the feature data by a matrix $\mathbf{X} = (x_{ij}) \in \mathbb{R}^{m \times n}$ (ignoring the time subscript as in (\ref{eq:customerJourney}) for a moment), which describes $n$ observed values for each of the $m$ features. In addition, we denote the $i$-th row of $\mathbf{X}$ by $\mathbf{x}_{i,\text{R}} = [x_{i1} ~x_{i2} ~\cdots ~x_{in}]$. The transformations are performed for each feature separately, resulting in different sets of transformation parameters for different features. To be specific, for $i$-th feature we describe the transformations as following.
 
 \begin{itemize}
 \item \textbf{Linear transformation:} The linear transformation is applied either to ensure all data to be positive for eligibility of applying the following power transformation, or to adapt to distributional modelling choice. It has the format:
@@ -166,4 +166,4 @@ for $j = 1, ~2, ~\dots, m$. In Box-Cox transformation, $\lambda_i$ is estimated 
 \end{equation}
 \end{itemize}
 
-We keep track of all parameters $\{ a_i, b_i, \lambda_i, x_i^\text{min}, x_i^\text{max}\}_{i=1}^m$ involved in the data transformation and standardisation process, because they are needed in prediction task where the feature data for new pupils will be transformed and standardised using the same parameters.
+We keep track of all parameters $\{ a_i, b_i, \lambda_i, x_i^\text{min}, x_i^\text{max}\}_{i=1}^m$ involved in the data transformation and standardisation process, because they are needed in prediction task where the feature data for new pupils will be transformed and standardised using the same parameters. Also note that these parameters may need to be recalibrated if there are major changed in behaviours.

@@ -1,7 +1,7 @@
 \section{Modelling Customer Behaviours}
 \label{sec:model}
 
-Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We would like to represent the various behaviour dynamics of a collection of customers by panel data, and employ the Markov chain model to describe these data. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours observable within a single time interval.
+Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We would like to represent the various behaviour dynamics of a collection of customers by panel data, and employ the Markov chain model to describe the generative process of these data. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours observable within a single time interval.
 
 \subsection{Representing Behaviours by Features}
 
@@ -14,11 +14,11 @@ in which the $t$-th element $\mathbf{X}_t = (x_{ij}^t) \in \mathbb{R}^{m \times 
 
 \subsection{Customer Journeys and Markov Chain}
 
-Customer journeys reflect their feature dynamics over time, denoted as (\ref{eq:customerJourney}). One practical challenge of computing such sequence of matrices is to resolve the inconsistency present in journeys of different customers. The inconsistency refers to the problem that the time intervals for different customers being alive in the services are not aligned, so that their features are not comparable. Moreover, it is highly likely to have significant missing information within specific time intervals for customers who have not yet entered the service or have already churned. To resolve the inconsistency, we align and aggregate customers' features by \textit{customer month} rather than calendar month. Doing so enables the effective modelling using Markov chain.
+Customer journeys are reflected by customers' feature dynamics over time, denoted as (\ref{eq:customerJourney}). One practical challenge of computing such sequence of matrices is to resolve the inconsistency present in journeys of different customers. The inconsistency refers to the problem that the time intervals for different customers being active in the services are not aligned, so that their features are not comparable. Moreover, it is highly likely to have significant missing information within specific time intervals for customers who have not yet entered the service or have already churned. To resolve the inconsistency, we align and aggregate customers' features by \textit{customer month} rather than calendar month. Doing so enables an effective modelling using a Markov chain.
 
 \subsubsection{Customer Month}
 
-Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to access Whizz products on a 1-month contract, and make the choice to leave the service at the end of each subscription. If no action is taken, a renewal will be made by default.
+Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to access Whizz products on a one-month contract, and make the choice to leave the service at the end of each subscription. If no action is taken, a renewal will be made by default.
 
 Due to the inconsistency present in journeys of different customers, we align their features by switching the reference from calendar month to customer month. This is illustrated by an example in \Cref{fig:customerMonth}. It provides much cleaner and more sensible data for modelling task. 
 
@@ -31,12 +31,12 @@ Due to the inconsistency present in journeys of different customers, we align th
 
 \subsubsection{Markov Chain - Dynamic Model for Behavioural Changes}
 
-We assume that customers with intention to churn exhibit different behaviours than others do. Behaviours are different distributionally, and generated from a finite number of \textit{states}. Then the discrete time behaviour of each customer results in a chain of states over time. This formulates into a discrete-time Markov chain with states transiting over time, where each state emits distinguishable behaviour distribution from others. An example is given in \Cref{fig:markovChain}. In brief, a Markov chain is a stochastic process characterised by \textit{transition} and \textit{emission} probabilities.
+We assume that customers with intention to churn exhibit different behaviours than others do. Behaviours are different distribution-wise, and generated from a finite number of \textit{states}. Then the discrete time behaviour of each customer results in a chain of states over time. This formulates into a discrete-time Markov chain with states transiting over time, where each state emits distinguishable behaviour distribution from others. An example is given in \Cref{fig:markovChain}. In brief, a Markov chain is a stochastic process characterised by \textit{transition} and \textit{emission} probabilities.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.75]{Markov.png}
-\caption{Behaviours emitted from Markov states. States $S_1$, $S_2$ and $S_3$ generate differently distributed behaviours. For example, $S_1$ generates $\{ B_1, ~B_2, ~B_4\}$ while $S_3$ produces $\{ B_1, ~B_4\}$. Even if the two states can generate the same set of behaviours, the emission probabilities can be different, thus still resulting in different behaviour distributions. States transit between each other over time stochastically.}
+\includegraphics[scale=.75]{Markov2.png}
+\caption{Behaviours emitted from Markov states. States $S_1$, $S_2$ and $S_3$ generate distributionally-clustered behaviours. For example, $S_1$ generates $\{ C_1, ~C_2, ~C_4\}$ while $S_3$ produces $\{ C_1, ~C_4\}$. Each cluster represents a unique and simple component distribution (such as a normal distribution, exponential distribution, etc.) of behaviours. The empirical distribution of behaviours being observed appears a mixture of different component distributions. States transit between each other over time stochastically.}
 \label{fig:markovChain}
 \end{figure}
 
@@ -55,12 +55,12 @@ a_{pq}^t = \mathbb{P} \left( s_{t+1} = S_p | s_t = S_q \right).
 \end{equation}
 \label{eq:transition}
 \end{subequations}
-If we assume time-homogeneity or \textit{stantionarity} of the Markov chain, then we can remove the time subscript from the notations because the parameters describing all probabilistic transitions are themselves constant.
+If we assume time-homogeneity or \textit{stationarity} of the Markov chain, then we can remove the time subscript from the notations because the parameters describing all probabilistic transitions are themselves constant.
 
 \paragraph*{Emission}
 \label{sec:emission}
 
-Recall that feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$ observed are instances from some distribution. We introduce a generic notation for observed sequence of features, $\{ \mathbf{o}_{t} \}_{t=1}^{T}$, where $\mathbf{o}_t = [o_{t1} ~o_{t2} ~\cdots ~o_{tm}]^\top$. The sequence of observations are generated in the following way:
+Recall that feature data $\{ \mathbf{x}_{tj} \}_{t=1}^{T}$ observed are instances from some distribution. We introduce a generic notation for observed sequence of features, $\{ \mathbf{o}_{t} \}_{t=1}^{T}$, where $\mathbf{o}_t = [o_{t1} ~o_{t2} ~\cdots ~o_{tm}]^\top$. The sequence of observations are generated in the following way (see the example in \Cref{fig:markovChain}):
 \begin{enumerate}
 \item At each time step, the system generates a state $s_t$ according to the state-to-state transition probability matrix $A_t$.
 \item Once the state $s_t$ has been generated, the system generates a cluster $c_t$ according to a state-to-cluster emission probability distribution $\pi(s_t,c_t)$. Suppose we define a finite collection of clusters $\mathcal{C} = \{ C_k \}_{k=1}^K$, then we denote:
@@ -98,7 +98,7 @@ b(\mathbf{o}_t) = \mathbb{P} (\mathbf{o}_t) = \sum_{k=1}^K \mathbb{P} (c_t = C_k
 \end{equation}
 Then we estimate $\{ \pi_k, \theta_k \}_{k=1}^K$ from observed feature data $\mathbf{X}_t$ with pre-defined multivariate kernel density $\phi(\cdot)$. This will be elaborated in section \ref{sec:mixtureModel}.
 
-\item The previous step gives not only the weights $\pi$ and cluster density $\phi(\cdot | \theta)$, but also a consequential cluster assignment of all customers. If we know the churn outcome for all customers, then we can calculate the proportion of churned customers, or churn rate, within each cluster. Thereafter, we can form states by grouping together clusters of similar level of churn rates.
+\item The previous step gives not only the weights $\pi$ and cluster density $\phi(\cdot | \theta)$, but also a consequential cluster assignment of all customers. If we know the churn outcome for all customers, then we can calculate the proportion of churned customers, or churn rate, for each cluster. Thereafter, we can form states by grouping together clusters of similar level of churn rates.
 
 Formally, we define the set of customers who have been assigned into cluster $C_k$ as
 \begin{equation}
@@ -151,7 +151,7 @@ A critical step of the state-cluster-observation Markov chain is the mixture mod
 \item It is Bayesian and treats $\theta$ as a random variable, of which posterior distributions will be updated from a prior as observed data coming in. 
 \item The Dirichlet process (DP) is used as a nonparametric prior, resulting in that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
-The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it does not worry about the unobserved data and can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
+This model choice has many benefits. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it does not worry about the unobserved data and can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
 
 \subsubsection{Dirichlet Process Mixture Model}
 
@@ -176,7 +176,7 @@ where $\text{Beta}(\cdot)$ is the beta function, $\Gamma(\cdot)$ is the gamma fu
 
 \paragraph*{Clustering Effect}
 
-We use DP as a prior to distribution of cluster parameter $\theta$:
+We use DP as a prior distribution of distributions for the cluster parameter $\theta$:
 \begin{equation}
 \theta | G \sim G(\cdot) \quad\text{ and }\quad G \sim \text{DP} (\cdot | G_0, \alpha).
 \label{eq:thetaDP}

@@ -14,7 +14,7 @@ How does cancellation rate change over time? To see this, we group subscribers b
 \label{fig:cancellationRate}
 \end{figure}
 
-The vertical axis of the subscriber number plot is log-scaled. We observe that the subscriber numbers over time fit a straight dashed line very well, inferring the number is exponentially decreasing. This is again verified by a relatively constant cancellation rate over time. There comes a lot of noises when customer month is larger than 25, because after that the number of live subscribers has reduced to less than 50 so noise dominates the estimate.
+The vertical axis of the subscriber number plot is log-scaled. We observe that the subscriber numbers over time fit a straight dashed line very well, inferring the number is exponentially decreasing. This is again consistent with a relatively constant cancellation rate over time. The signal becomes noisy when customer month is larger than 25, because after that the number of live subscribers has reduced to less than 50, and so noise dominates the estimate.
 
 Within each customer month we can assume each customer in independent from others, then we can interpret the churn rate of the customer month group as the churn probability of each individual in that group. Hence, this observation leads to a very important assumption which greatly simplifies our model: each customer's cancellation outcome is only dependent on his features within the current customer month, not further previous ones. In other words, customer months are independent in leading to churn outcome, so we can consider all customer months together and perform a single clustering. %This again implies that the Markov chain is stationary, which means $A_1 = \cdots = A_T$.
 
