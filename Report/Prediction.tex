@@ -1,3 +1,4 @@
+\vspace*{-0.5cm}
 \section{Churn Probability Prediction}
 \label{sec:prediction}
 
@@ -5,16 +6,16 @@ A key benefit of our model is that the parameters inferred from data (called tra
 
 \subsection{Prediction Workflow}
 
-We summarise the the prediction workflow in the schematic \Cref{fig:predictionWorkflow}.
+%We summarise the the prediction workflow in the schematic \Cref{fig:predictionWorkflow}.
 
-\begin{figure}[!h]
-\centering
-\includegraphics[scale=0.7]{PredictionWorkflow.png}
-\caption{Prediction workflow in two steps, and its downstream process.}
-\label{fig:predictionWorkflow}
-\end{figure}
+%\begin{figure}[!h]
+%\centering
+%\includegraphics[scale=0.65]{PredictionWorkflow.png}
+%\caption{Prediction workflow in two steps, and its downstream process.}
+%\label{fig:predictionWorkflow}
+%\end{figure}
 
-In the train step, we need select data of proper pupils to feed into the model. Proper pupils means that the pupils must have already churned in history, otherwise we do not know the churn outcome and cannot capture the whole behavioural path. The data trimming is discussed in section \ref{sec:dataScope}. The model we will obtain at the end of train step is parametrised by
+The prediction workflow includes the train step and the predict step. In the train step, we need select data of proper pupils to feed into the model. Proper pupils means that the pupils must have already churned in history, otherwise we do not know the churn outcome and cannot capture the whole behavioural path. The data trimming is discussed in section \ref{sec:dataScope}. The model we will obtain at the end of train step is parametrised by
 \begin{itemize}
 \item a collection of parameters $\{ a_i, b_i, \lambda_i, x_i^\text{min}, x_i^\text{max}\}_{i=1}^m$ for transformation and standardisation of feature data;
 \item a posterior distribution $\mathbb{P} (\theta | \mathbf{X}, \alpha, G_0)$ guiding observation-to-cluster assignment, and cluster-associated churn risk; and
@@ -43,8 +44,9 @@ r_{t+\Delta t} = \bm\lambda^\top A^{\Delta t -1 } \mathbf{s}_{t+1}.
 We apply formula (\ref{eq:dynamics}) and obtain the evolution of expected churn risk in the next 25 months, as shown in \Cref{fig:dynamics}.
 
 \begin{figure}[!h]
+\vspace*{-0.3cm}
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{Dynamics.pdf}
+\includegraphics[scale=.7, trim={0 0.5cm 0 0}, clip]{Dynamics.pdf}
 \caption{Predicted churn risk evolution for pupils assigned to different states. Eventually any pupil will churn almost surely, regardless which state he is in.}
 \label{fig:dynamics}
 \end{figure}
@@ -53,32 +55,33 @@ An important note is that our model is trained on pupils' monthly-aggregated beh
 
 \subsection{Evaluating Overfitting}
 
-To investigate the overfitting issue, we split the data into train set and test set, and train the model using train data set, then compare the churn probability assignments for train set and test set.
+To investigate the overfitting issue, we split the data into train set and test set, and train the model using train data set, then compare the churn probability assignments for train set and test set. This is shown in \Cref{fig:overfitting}.
 
 \begin{figure}[!h]
+\vspace*{-0.5cm}
 \centering
 	\subfloat[Train Pct = 5\%]{%
-		\includegraphics[scale=.7]{Overfitting005.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting005.pdf}
 	}
 	\subfloat[Train Pct = 10\%]{%
-		\includegraphics[scale=.7]{Overfitting010.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting010.pdf}
 	}
 	\hspace{0mm}
 	\subfloat[Train Pct = 50\%]{%
-		\includegraphics[scale=.7]{Overfitting050.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting050.pdf}
 	}
 	\subfloat[Train Pct = 70\%]{%
-		\includegraphics[scale=.7]{Overfitting070.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting070.pdf}
 	}
 	\hspace{0mm}
 	\subfloat[Train Pct = 90\%]{%
-		\includegraphics[scale=.7]{Overfitting090.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting090.pdf}
 	}
 	\subfloat[Train Pct = 95\%]{%
-		\includegraphics[scale=.7]{Overfitting095.pdf}
+		\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{Overfitting095.pdf}
 	}
 \caption{Distributions of computed churn probabilities for churner (red) and non-churner (green) in both train and test data sets, given different proportions of data trained.}
-\label{eq:overfitting}
+\label{fig:overfitting}
 \end{figure}
 
-The splitting is random. We compare the distributions of computed churn probabilities for churner and non-churner in both train and test data sets, given different proportions of data trained. When the proportion of train data set is small (5\%, 10\%), distributions inferred from both sets appear not similar. However, when there is very large train data set, distributions inferred from train and test sets appear very similar. It seems larger data set for training is preferred and the overfitting issue is not significant. A possible explanation is that in our model, the clustering task is performed without knowing any churn outcome information, so that there is not a ``fitting'' process involved when do clustering. Moreover, since it is mixture-based, more data mean statistically the estimated model parameters will be closer to their true value.
+The splitting is random. We compare the distributions of computed churn probabilities for churner and non-churner in both train and test data sets, given different proportions of data trained. When the proportion of train data set is small (5\%, 10\%), distributions inferred from both sets appear not similar. However, when there is very large train data set, distributions inferred from train and test sets appear very similar. Larger data set for training is preferred and the overfitting issue is not significant. A possible explanation is that the clustering task is performed without knowing any churn outcome information, so that there is not a ``fitting'' process involved when do clustering. Moreover, since it is mixture-based, more data mean statistically the estimated model parameters will be closer to their true value.

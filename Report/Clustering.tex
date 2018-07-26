@@ -9,7 +9,7 @@ How does cancellation rate change over time? To see this, we group subscribers b
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7]{CancellationRate.eps}
+\includegraphics[scale=.7, trim={0 0.4cm 0 0.4cm}, clip]{CancellationRate.eps}
 \caption{Evolution of subscriber number and cancellation rate.}
 \label{fig:cancellationRate}
 \end{figure}
@@ -26,9 +26,9 @@ We move to find appropriate density form $\phi(\cdot)$ for all $m=15$ features. 
 
 \subsubsection{Features with Missing Data}
 
-It is not uncommon to observe pupils who have no visits to the service at all within a customer month although they are still in subscription. This introduces missing information to features such as mark, fail rate, etc.. We cannot simply fill these information by zeros, which are indistinguishable from real zero marks obtained by other pupils and will servrely distort the distribution if their number is large. 
+It is not uncommon to observe pupils who have no visits to the service at all within a customer month although they are still in subscription. This introduces missing information to features such as mark, fail rate, etc.. We cannot simply fill these information by zeros, which are indistinguishable from real zero marks obtained by other pupils and will servrely distort the distribution if their amount is large. 
 
-We solve this problem by splitting pupils into three group partitions according to their activity level, where clustering task will be performed on different groups with different sets of features. The selection of features in each group ensure that there is no missing information or trivial information (for example, we can ignore ``number of visit'' as a feature for pupils who have no visits). We list the group definition and the associated churn rate and size in \Cref{tab:G123}. This simple splitting can already form clusters of very different churn rates. 
+We solve this problem by splitting pupils into three partitions according to their activity level, where clustering task will be performed on different partitions with different sets of features. The selection of features in each group ensure that there is no missing information or trivial information (for example, we can ignore ``number of visit'' as a feature for pupils who have no visits). We list the group definition and the associated churn rate and size in \Cref{tab:G123}. This simple splitting can already form clusters of very different churn rates. 
 
 \begin{table}[!h]
 \centering
@@ -59,8 +59,9 @@ G3 &
 The simplest form for $\phi(\cdot)$ is multivariate Gaussian where each individual feature is assumed to be a mixture of normal distributions. This appears unrealistic, even after the Box-Cox transformation. We display the empirical distributions for all features in \Cref{fig:featureDistribution}. The four ``rate'' features at the top apparently violate the Gaussian mixture assumption. The problem comes from the phenomenon called single-value-inflation, where a single value such as 0 has significantly frequent observations. In fact, mixture model is an ideal for modelling such distribution since it allows the overall distribution to be consisted of several different simpler distribution (not only Gaussian). We can model this feature separately from other features by assuming that it is independent of other features.
 
 \begin{figure}[!h]
+\vspace*{-0.3cm}
 \centering
-\includegraphics[scale=.7, trim={0 6cm 0 0}, clip]{FeatureDistribution.eps}
+\includegraphics[scale=.7, trim={0 6cm 0 0.2cm}, clip]{FeatureDistribution.eps}
 \caption{Empirical distribution (histogram) and Gaussian kernel for all features in G3.}
 \label{fig:featureDistribution}
 \end{figure}
@@ -70,20 +71,22 @@ Hence, we want to assume the four ``rate'' features to be independent from other
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.7, trim={0 2.5cm 0 2.5cm}, clip]{FeatureCorrelation.eps}
+\vspace*{-0.3cm}
 \caption{Correlation of all features. Red stands for perfect positive correlation, blue for perfect negative correlation and white for uncorrelation.}
 \label{fig:featureCorrelation}
 \end{figure}
 
-To choose the suitable mixture form for each independent feature, we have a visual check on its empirical distribution and decides the type of simple distribution and the number of components. The fitting result from EM-algorithm is visualised in \Cref{fig:fitIndependentFeature}.
+\vspace*{-0.9cm}
+To choose the suitable mixture form for each independent feature, we have a visual check on its empirical distribution and decides the type of simple distribution and the number of components. The fitting result is visualised in \Cref{fig:fitIndependentFeature}.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FittingIndependentFeatures.eps}
+\includegraphics[scale=.7, trim={0 0.2cm 0 0.2cm}, clip]{FittingIndependentFeatures.eps}
 \caption{Fitting bespoke mixture model for independent features. Assess rate and stack rate data are reversed by their order to have a better fitting to simple distribution. This is achieved by linear transformation as described in (\ref{eq:linearTransformation}). We can see how this outperforms compared with the Gaussian kernel for these features in \Cref{fig:featureDistribution}. }
 \label{fig:fitIndependentFeature}
 \end{figure}
 
-The choice of component distributions and their quantities are listed in \Cref{tab:fitIndependentFeature}. Note that for independent features we do not infer the number of clusters from data following Baysian approach. The reason is exactly why we assume their independence from other features and model them separately: they have idiosyncratic distributions so we want to have special treatment to capture them. The side effect is the component choice might be sensitive to observed data, and anytime when new data come in we need to verify that the choice is not severely violated. Otherwise we need alter to a more suitable component choice. Fortunately, the component choice listed in \Cref{tab:fitIndependentFeature} works well for both G2 and G3 data (G1 has none of the ``rate'' features defined by construction). For each component, EM-algorithm will estimate (1) the parameters of each component distribution ($\lambda$ for exponential, $(\mu, \sigma)$ for Gaussian, etc.) and (2) the weights of each component by (locally) maximising the likelihood.
+The choice of component distributions and their quantities are listed in \Cref{tab:fitIndependentFeature}. We do not infer the number of clusters from data following Baysian approach for independent features. The reason is exactly why we assume their independence from other features and model them separately: they have idiosyncratic distributions so we want to have special treatment to capture them. The side effect is the component choice might be sensitive to observed data, and might need be recalibrated to new data. Fortunately, the component choice listed in \Cref{tab:fitIndependentFeature} works well for both G2 and G3 data (G1 has none of the ``rate'' features defined by construction). For each component, EM-algorithm will estimate (1) the parameters of each component distribution ($\lambda$ for exponential, $(\mu, \sigma)$ for Gaussian, etc.) and (2) the weights of each component by (locally) maximising the likelihood.
 
 \begin{table}[!h]
 \centering
@@ -151,17 +154,18 @@ We use the variational inference presented by Blei and Jordan \cite{blei2006}. A
 \label{fig:clusteringG3}
 \end{figure}
 
-Both cluster size and churn rate show sensible patterns and have meaningful implications:
-\begin{itemize}
-\item The purely behaviour-based model can infer clusters with very different churn rate. The highest cluster churn rate is 2.6 times higher than the lowest one, and 2.2 times higher than the group average.
-\item It is more challenging to identify pupils of higher churn probability, reflecting by the observation that the higher rate, the smaller cluster is found.
-\end{itemize} 
+Both cluster size and churn rate show sensible patterns and have meaningful implications. The purely behaviour-based model can infer clusters with very different churn rate. The highest cluster churn rate is 2.6 times higher than the lowest one, and 2.2 times higher than the group average. Moreover, it is more challenging to identify pupils of higher churn probability, reflecting by the observation that the higher rate, the smaller cluster is found.
+%\begin{itemize}
+%\item The purely behaviour-based model can infer clusters with very different churn rate. The highest cluster churn rate is 2.6 times higher than the lowest one, and 2.2 times higher than the group average.
+%\item It is more challenging to identify pupils of higher churn probability, reflecting by the observation that the higher rate, the smaller cluster is found.
+%\end{itemize}
 
 We need combine the clusters from independent and multivariate features together. By our component distributions configuration in \Cref{tab:fitIndependentFeature}, modelling each independent feature can find 4 clusters. Plus the 4 clusters identified from the multivariate features, our model can identify up to $1024 = 4^5$ possible clusters. Nevertheless, it ends up with 268 clusters found in G3. The average size and cluster churn rate are shown in \Cref{fig:clusteringG3Complete}. By ``average'', we compute the average size of clusters with the same churn rate. The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for those extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to cancel.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{ClusteringG3_Complete.pdf}
+\vspace*{-0.3cm}
+\includegraphics[scale=.7, trim={0 0.3cm 0 0.3cm}, clip]{ClusteringG3_Complete.pdf}
 \caption{Identified clusters in G3, their average sizes and associated churn rate.}
 \label{fig:clusteringG3Complete}
 \end{figure}
@@ -175,6 +179,7 @@ We do clustering (independent features, then multivariate features and finally c
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.7, trim={0 0 0 0}, clip]{ChurnProbability.eps}
+\vspace*{-0.3cm}
 \caption{Distribution (Gaussian kernel) of individual churn probability over pupils in G1, G2, G3 and in the whole combined sample. In making this plot, our algorithm and initialisation leads to 84 clusters for G1, 28 clusters for G2 and 268 clusters for G3.}
 \label{fig:churnProb}
 \end{figure}
@@ -191,20 +196,19 @@ In \Cref{fig:statesDefinition} we show an example definition of states. We choos
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{StatesDefinition.pdf}
+\includegraphics[scale=.7, trim={0 0.3cm 0 0.3cm}, clip]{StatesDefinition.pdf}
 \caption{Defining Markov states by grouping together pupils of similar levels of churn risk. The right plot shows the size of each state as well as churn rate. The dashed line indicates the level of population churn rate.}
 \label{fig:statesDefinition}
 \end{figure}
 
 The states' definition is dependent on the choice of anchor points. Whizz can choose the number and value of anchor points for forming states based on their needs. For example, if Whizz is interested in habits of very high-risk subscribers, they can increase the last anchor point.
 
-When we want to check the churn risk for an active customer, we feed his feature data into the trained model and reach a churn probability. The predicted churn probability for a single customer might be very noisy and inaccurate due to overfitting in the clustering process. Overfitting means that the identified clusters can correspond too closely or exactly to the training data set, and therefore may fail to predict cluster for additional data point. However, when translating the churn probability into state, we are more confident about the accuracy of the predictive state. Therefore, defining state helps practical usage of the model in labeling and predicting churn risk levels.
+%When we want to check the churn risk for an active customer, we feed his feature data into the trained model and reach a churn probability.
+The predicted churn probability for a single customer might be very noisy and inaccurate due to overfitting in the clustering process. Overfitting means that the identified clusters can correspond too closely or exactly to the training data set, and therefore may fail to predict cluster for additional data point. However, when translating the churn probability into state, we are more confident about the accuracy of the predictive state. Therefore, defining state helps practical usage of the model in labeling and predicting churn risk levels.
 
 \subsubsection{Transitional Analysis}
 
-Following the state definitions in the previous section, we can move to the transitional analysis. We calculate the transition probabilities by formula (\ref{eq:transition}). Note that we need to add another state $S_\text{churn}$ which will only transit to itself (called an absorbing state, a state that once entered cannot be left). Hence, the complete state set is $\mathcal{S} = \{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
-
-We compute the transition probability matrix as:
+Following the state definitions in the previous section, we can move to the transitional analysis. We calculate the transition probabilities by formula (\ref{eq:transition}):
 \begin{equation}
 A = 
 \begin{bmatrix}
@@ -215,7 +219,9 @@ A =
 0.00 & 0.12 & 0.25 & 0.56 & 1.00 \\
 \end{bmatrix},
 \end{equation}
-recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$. The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey diagram. Churned pupils (those in $S_\text{churn}$) can not transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Barely pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
+recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$. Note that we add another state $S_\text{churn}$ which will only transit to itself (called an absorbing state, a state that once entered cannot be left). Hence, the complete state set is $\mathcal{S} = \{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
+
+The transition probabilities are visualised in \Cref{fig:sankey}. Churned pupils (those in $S_\text{churn}$) can not transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Barely pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
 
 \begin{figure}[!h]
 \centering
@@ -224,25 +230,25 @@ recall that $a_{pq} = \mathbb{P} (s_{t+1} = S_p | s_t = S_q)$. The transition pr
 \label{fig:sankey}
 \end{figure}
 
+\vspace*{-0.5cm}
 \subsection{Feature Impact}
 
-We can examine how features play a role in differentiating the churn risk of pupils. A simple and useful examination is to compare how features distribute differently for different states. We have shown the distributions of multivariate features in \Cref{fig:ftrImpMulti}.
+We can examine how features play a role in differentiating the churn risk of pupils. A simple and useful examination is to compare how features distribute differently for different states. We have shown the distributions of multivariate features in \Cref{fig:ftrImpMulti}. Multiple implications can be drawn. If the red and green distributions of some feature do not deviate too much from each other, we can conclude that this feature might not be very informative of distinguishing the states. For example, age, age difference, progress level appear to be not informative. Mean and variations of the distributions are useful to tell how features influence churn risk. For example, pupils having more visits, or spending more time are less likely to churn.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FeatureImpactMultivariate.pdf}
+\vspace*{-0.3cm}
+\includegraphics[scale=.7, trim={0 0.1cm 0 0.1cm}, clip]{FeatureImpactMultivariate.pdf}
 \caption{Distributions of features for $S_1$ and $S_4$. We flag distribution for $S_1$, the safest state, by green color and $S_4$, the riskiest state, by red color.}
 \label{fig:ftrImpMulti}
 \end{figure}
-
-Multiple implications can be drawn. If the red and green distributions of some feature do not deviate too much from each other, we can conclude that this feature might not be very informative of distinguishing the states. For example, age, age difference, progress level appear to be not informative. Mean and variations of the distributions are useful to tell how features influence churn risk. For example, pupils having more visits, or spending more time are less likely to churn. 
 
 For each of the independent features, we can find the most frequent component for each state. This is shown in \Cref{fig:ftrImpIndep}. Pupils having a lot of exercises/lessons incomplete, no fail outcome, moderately high stack rate, full assessment are most likely to churn.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7, trim={0 0 0 0}, clip]{FeatureImpactIndependent.pdf}
+\vspace*{-0.3cm}
+\includegraphics[scale=.7, trim={0 0.1cm 0 0.1cm}, clip]{FeatureImpactIndependent.pdf}
 \caption{Distributions of features for $S_1$ and $S_4$. We flag the most frequent component for $S_1$, the safest state, by green color and $S_4$, the riskiest state, by red color. Note that the data for stack rate and assess rate are reversed by order.}
 \label{fig:ftrImpIndep}
 \end{figure}
-

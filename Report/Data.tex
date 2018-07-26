@@ -128,7 +128,7 @@ To illustrate the benefit of data transformation, we take the feature ``usage ti
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7]{BoxCoxTransformation.eps}
+\includegraphics[scale=.7, trim={0 0.4cm 0 0.4cm}, clip]{BoxCoxTransformation.eps}
 \caption{Histograms and Gaussian kernels for raw data and transformed data of feature usage time. We use Box-Cox transformation with $\lambda=0.12$.}
 \label{fig:boxcox}
 \end{figure}
@@ -137,7 +137,8 @@ Standardisation of the data set is also important for our model. The motivation 
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.7]{DataStandardisation.eps}
+\vspace*{-0.2cm}
+\includegraphics[scale=.7, trim={0 0.4cm 0 0.4cm}, clip]{DataStandardisation.eps}
 \caption{Scatter plot for data of fail rate and usage time. Usage time in hours has a range from 0 to 40 while fail rate only varies from 0 to 1. The variance of fail rate is much smaller than that of usage time. After standardisation, the features have comparable level of values.}
 \label{fig:dataStandardisation}
 \end{figure}
