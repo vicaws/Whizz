@@ -20,9 +20,9 @@
 
 \infommmarginnote[10em]{Churn prediction helps the business to detect customers who are likely to cancel a subscription.}
 
-Retained customers in general create higher revenues than new customers do, and making a sell to a new customer can cost up to 5 times more depending on the business. Therefore, many companies form the Customer Relationship Management (CRM) team with a focus on customer retention strategies. A crucial step is then to identify high risk customers who are intending to discontinue their usage of the services. This assessment is better known as \textit{churn prediction}.
+Retained customers in general create higher revenues than new customers do, and making a sell to a new customer can cost up to 5 times more than encouraging a customer to stay, depending on the business. Therefore, many companies form a Customer Relationship Management (CRM) team with a focus on customer retention strategies. A crucial step is then to identify high risk customers who are intending to discontinue their usage of the services. This assessment is better known as \textit{churn prediction}.
 
-Our project aims to perform the churn prediction task based on making probabilistic clustering assignment of customers' behaviours, and formulate the sequential processes into a scalable pipeline which can be easily reused, updated and extended for many applications. In particular, we apply the pipeline to analyse pupil subscribers' data for Whizz Education (referred to as ``Whizz''). Whizz provides online virtual tutorial service, Math-Whizz, which pupils can access by purchasing monthly subscriptions. At the end of live subscription, pupils can make the choice to cancel or do nothing to renew a new 1-month subscription.
+Our project aims to perform the churn prediction task based on making probabilistic clustering assignments of customers' behaviours, and formulate the sequential processes into a scalable pipeline which can be easily reused, updated and extended for many applications. In particular, we apply the pipeline to analyse pupil subscribers' data for Whizz Education (referred to as ``Whizz''). Whizz provides an online virtual tutorial service, Math-Whizz, which pupils can access by purchasing monthly subscriptions. At the end of live subscription, pupils can make the choice to cancel or do nothing to renew a new 1-month subscription.
 
 \subsection*{Train and Prediction Workflow}
 \addcontentsline{toc}{subsection}{Train and Prediction Workflow}
@@ -48,7 +48,7 @@ Whizz can use the 2-step workflow proposed in \Cref{fig:workflow} to predict pup
 
 \section{A Generative Process for Customer Behaviours}
 
-Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We employ the Markov chain to describe the generative process of customers' behaviours, where the. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours within a single time interval. Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to Whizz products on a 1-month contract, and make the choice to cancel at the end of current subscription. Otherwise a renewal will be made by default.
+Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We employ a Markov chain to describe the generative process of customers' behaviours. In addition, we use a mixture model to find Markov states, each of which defines a partition of the behaviours within a single time interval. Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to Whizz products on a 1-month contract, and make the choice to cancel at the end of current subscription. Otherwise a renewal will be made by default.
 
 \subsection*{Customer Journey}
 \addcontentsline{toc}{subsection}{Customer Journey}
@@ -77,7 +77,7 @@ We assume that customers with intentions to churn exhibit different behaviours t
 \centering
 \includegraphics[scale=.7]{Markov.png}
 \caption{Behaviours emitted from Markov states. States $S_1$, $S_2$ and $S_3$ generate differently distributed behaviours. For example, $S_1$ generates $\{B_1, B_2, B_4\}$ while $S_3$ produces $\{ B_1, B_4\}$.
-Even if the two states can generate the same set of behaviours, the emission probabilities can be different, thus still resulting in different behaviour distributions. States transit between each other over time randomly.}
+Even if the two states can generate the same set of behaviours, the emission probabilities can be different, thus resulting in different behaviour distributions. States transit between each other over time randomly.}
 \label{fig:markov}
 \end{figure}
 
@@ -90,40 +90,37 @@ The distribution of the emitted behaviours from a state is assumed to be a mixtu
 
 \section{Probabilistic Clustering Using Mixture Model}
 
-\infommmarginnote[10em]{Dirichlet process mixture is Bayesian and can infer the number of clusters from data.}
+\infommmarginnote[10em]{A Dirichlet Process Mixture is Bayesian and can infer the number of clusters from data.}
 
 A critical step of the state-cluster-observation Markov chain is the mixture model that describes the probabilistic assignment of observations to clusters. We choose specifically the \textit{Dirichlet Process Mixture} setting which has two important features:
 \begin{enumerate}
 \item It is Bayesian and treats component parameters as random variables, of which posterior distributions will be updated from a prior as observed data coming in. 
-\item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
+\item The Dirichlet process (DP) is used as a nonparametric prior so that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
-The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
+The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it can be updated with new data coming in. Moreover, it infers the number of clusters from observed data and opens the opportunities of finding new clusters as more data are observed.
 
 \section{Modelling Pipeline}
 
 \subsection*{Scope of Data and Features}
 \addcontentsline{toc}{subsection}{Scope of Data and Features}
 
-Whizz stores and maintains data generated from business activities in a database consisting of several relational tables. The most relevant tables we use are listed in \Cref{tab:dataTable}. The study period is from January 1st, 2014 to April 20th, 2018. The number of records within this study period in each data table is also indicated.
+Whizz stores and maintains data generated from business activities in a database consisting of several relational tables. The most relevant tables we use are listed in \Cref{tab:dataTable}. %The study period is from January 1st, 2014 to April 20th, 2018. The number of records within this study period in each data table is also indicated.
 
 \begin{table}[!h]
 \centering
 \footnotesize
 \begin{tabular}{l|p{6cm}|c}
 \hline
-\textbf{Data Table} & \textbf{Description} & \textbf{Number of Records} \\
+\textbf{Data Table} & \textbf{Description}  & \textbf{Number of Records} \\
 \hline
 Account Information &
-Pupils' ID and personal information such as date-of-birth. &
-2,672 \\
+Pupils' ID and personal information such as date-of-birth. & 2,672 \\
 \hline
 Subscription history &
-Start date and end date of each new subscription or renewed associated with each pupil. &
-17,861 \\
+Start date and end date of each new subscription or renewed associated with each pupil.  & 17,861 \\
 \hline
 Lesson history &
-Details of each visit activity for each pupil during his subscription period. The visit activity includes the date of visit, time spent, score achieved, lesson outcome, etc. &
-450,548 \\
+Details of each visit activity for each pupil during his subscription period. The visit activity includes the date of visit, time spent, score achieved, lesson outcome, etc. & 450,548 \\
 \hline
 \end{tabular}
 \caption{Description of data tables. The number of records within the study period 2014-01-01 $\sim$ 2018-04-20 in each data table is also indicated.}
@@ -229,7 +226,7 @@ Looking at the distribution of churn probabilities, we can observe a few concent
 \begin{figure}[htb]
 \vspace*{-3mm}
 \centering
-\includegraphics[width=\textwidth, trim={0 10mm 0 0}, clip]{StatesDefinition.pdf}
+\includegraphics[width=\textwidth, trim={0 5mm 0 0}, clip]{StatesDefinition.pdf}
 \caption{Defining Markov states by grouping together pupils of similar levels of churn risk. The right plot shows the size of each state as well as churn rate. The dashed line indicates the level of population churn rate.}
 \vspace*{-2mm}
 \label{fig:state}
@@ -237,12 +234,13 @@ Looking at the distribution of churn probabilities, we can observe a few concent
 
 We define the Markov states by grouping together clusters of similar churn rates because we want the states to indicate churn risk level. In right of \Cref{fig:state} we show an example. We choose to form 4 states $S_1$, $S_2$, $S_3$ and $S_4$ by grouping clusters according to 3 anchor points: 0.3, 0.22, 0.35 (the three vertical dashed line shown on the left plot). The state churn rates are 0.0\%, 11.7\%, 25.4\% and 55.6\% respectively. Therefore, we can say $S_1$ is the safest state where pupils in this state are very unlikely to churn. In contrast, $S_4$ is a risky state in the sense that pupils in this state are 5.5 times more likely than average to cancel the subscription.
 
+\vspace*{-3mm}
 \subsection*{Transitional Analysis}
 \addcontentsline{toc}{subsection}{Transitional Analysis}
 
 Following the state definitions in the previous section, we can move to the transitional analysis. We assume stationarity of the Markov chain and estimate the transition probabilities by maximum likelihood. Note that we need to add a state $S_\text{churn}$ that once entered cannot be left (called an absorbing state). Hence, the complete state set is $\{S_1, S_2, S_3, S_4, S_\text{churn}\}$.
 
-The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey diagram. Churned pupils (those in $S_\text{churn}$) can not transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Barely pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
+The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey diagram. Churned pupils (those in $S_\text{churn}$) cannot transit to other states. $S_2$ is the largest destination state, which makes sense as $S_2$ represents a ``normal'' state in which the churn probability is approximately the same as population average. Very few pupils transit from other states to $S_1$ (the safest state) or $S_4$ (the riskiest state). This seems imply two behavioural paths. First, if a pupil is very likely to stay live in the subscription (in $S_1$), then his intention of exit will be gradually accumulated since most likely he will transit to $S_2$ in the next period and $S_2$ again the next. Second, the reason for strong intention of churn might be purely external and irrelevant to customer experience at Whizz, since there is little chance of transiting to $S_4$.
 
 \infommmarginnote[10em]{State transition probabilities help us understand behaviour dynamics.}
 
@@ -256,11 +254,11 @@ The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey dia
 \vspace*{-3mm}
 \section{Discussion, conclusions \& recommendations}
 
-To help predict churn risk of pupils from the subscription to Whizz online tutorial service, we have proposed a mixture based model which identifies behaviour clusters associated with distinguished levels of churn rate. Moreover, we fit this model into a Markov chain setting to allow us understand temporal customer behavioural path. The sequential modelling processes have been formulated into a scalable pipeline that can be easily reused, updated and extended.
+To help predict churn risk of pupils from the subscription to Whizz online tutorial service, we have proposed a mixture based model which identifies behaviour clusters associated with distinguished levels of churn rate. Moreover, we fitted this model into a Markov chain setting to allow us understand temporal customer behavioural path. The sequential modelling processes have been formulated into a scalable pipeline that can be easily reused, updated and extended.
 
-We describe customer behaviours as a result of the state-cluster-observation generative process. The mixture based model can infer clusters from observed behaviours, and clusters will be grouped to form states by bespoke risk appetite. We have formed 4 states from Whizz's data where the ``riskiest'' state has a churn rate 5.5 time higher then the population average. The model trained from observed data can then be used to make prediction on the churn risk of active pupils, and also analyse the potential causes of such risk.
+We described customer behaviours as a result of the state-cluster-observation generative process. The mixture based model can infer clusters from observed behaviours, and clusters will be grouped to form states by bespoke risk appetite. We have formed 4 states from Whizz's data where the ``riskiest'' state has a churn rate 5.5 time higher then the population average. The model trained from observed data can then be used to make prediction on the churn risk of active pupils, and also analyse the potential causes of such risk.
 
-I'm very confident about this mixture based behavioural model approach in churn prediction. There's room for future work. First, we have not discussed in details about the feature selection and feature engineering, though the model itself can absorb any number of features. Selecting independent, informative features may greatly improve the clustering outcome and prediction accuracy. There is room to mine useful information from Whizz's pupils activity database. Second, it is possible to extend the analysis about how feature impacts churn risk. One direction is to find a way to compare feature importance, which translates into measuring importance of dimensions in a multivariate setting. This will be very useful to help the downstream CRM team to prioritise retention strategies.  
+This mixture based behavioural model in churn prediction appeals to be a good approach and there's room for future work. First, we have not discussed in details about the feature selection and feature engineering, though the model itself can absorb any number of features. Selecting independent, informative features may greatly improve the clustering outcome and prediction accuracy. There is room to mine useful information from Whizz's pupils activity database. Second, it is possible to extend the analysis about how feature impacts churn risk. One direction is to find a way to compare feature importance, which translates into measuring importance of dimensions in a multivariate setting. This will be very useful to help the downstream CRM team to prioritise retention strategies.  
 
 Dr. Junaid Mubeen, Director of Education at Whizz Education said: ``\emph{We are very pleased with Victor's contribution. He has addressed our key requirement of developing a model that allows us to predict the likelihood of home users cancelling their subscription from one month to the next. Discussions are already underway with our Development and Marketing teams to understand how we can make use of Victor's model on a continual basis to turn around customers ``at risk'' of cancelling. Victor has also illuminated a number of Machine Learning strategies that we can see having applications in other business problems.}''
 
