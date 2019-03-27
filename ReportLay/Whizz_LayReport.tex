@@ -22,7 +22,7 @@
 
 Retained customers in general create higher revenues than new customers do, and making a sell to a new customer can cost up to 5 times more depending on the business. Therefore, many companies form the Customer Relationship Management (CRM) team with a focus on customer retention strategies. A crucial step is then to identify high risk customers who are intending to discontinue their usage of the services. This assessment is better known as \textit{churn prediction}.
 
-Our project aims to perform the churn prediction task based on making probabilistic clustering assignment of customers' behaviours, and formulate the sequential processes into a scalable pipeline which can be easily reused, updated and extended for many applications. In particular, we apply the pipeline to analyse pupil subscribers' data for Whizz Education (referred to as ``Whizz''). Whizz provides online virtual tutorial service, Math-Whizz, which pupils can access by purchasing monthly subscriptions. At the end of live subscription, pupils can make the choice to cancel or do nothing to renew a new 1-month subscription.
+Our project aims to perform the churn prediction task based on making probabilistic clustering assignment of customers' behaviours, and formulate the sequential processes into a scalable pipeline which can be easily reused, updated and extended for many applications. In particular, we apply the pipeline to analyse pupil subscribers' data for Whizz Education (referred to as ``Whizz''). Whizz provides online virtual tutorial service, Math-Whizz, which pupils can access by purchasing monthly subscriptions. At the end of each subscription, pupils can make the choice to either cancel or do nothing and thereby start a new 1-month subscription.
 
 \subsection*{Train and Prediction Workflow}
 \addcontentsline{toc}{subsection}{Train and Prediction Workflow}
@@ -48,14 +48,14 @@ Whizz can use the 2-step workflow proposed in \Cref{fig:workflow} to predict pup
 
 \section{A Generative Process for Customer Behaviours}
 
-Customers' behaviour evolves over time as they respond to business offering and adjust to their own demand. We employ the Markov chain to describe the generative process of customers' behaviours, where the. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours within a single time interval. Splitting pupils' behaviours into monthly time periods makes most sense provided the business settings at Whizz. Pupils subscribe to Whizz products on a 1-month contract, and make the choice to cancel at the end of current subscription. Otherwise a renewal will be made by default.
+Customers' behaviour evolves over time as they respond to the business offering and adjust to their own needs. We employ the Markov chain to describe the generative process of customers' behaviours, where the. In addition, we use the mixture model to find Markov states, each of which defines a partition of the behaviours within a single time interval. Splitting pupils' behaviours into monthly time periods is a reasonable representation of the business setting at Whizz. Pupils subscribe to Whizz products on a 1-month contract, and can choose to cancel at the end of current subscription, otherwise a renewal will be made by default.
 
 \subsection*{Customer Journey}
 \addcontentsline{toc}{subsection}{Customer Journey}
 
 \infommmarginnote[10em]{Customer month is a time period between the start and the end of a monthly subscription.}
 
-Customer journeys reflect the dynamics of their monthly-behaviours over time. There is inconsistency present in journeys of different customers. The inconsistency refers to the problem that the time intervals for different customers being alive in the services are not aligned, so that their behaviours are not comparable. To resolve the inconsistency, we align and aggregate customers' behaviours by switching the reference from calendar month to customer month. This is illustrated by an example in \Cref{fig:customerMonth}.
+Customer journeys reflect the dynamics of their monthly-behaviours over time. There is inconsistency present in journeys of different customers. The inconsistency refers to the problem that the time intervals for different customers being active in the services are not aligned, so that their behaviours are not comparable. To resolve the inconsistency, we align and aggregate customers' behaviours by switching the reference from calendar month to customer month. This is illustrated by an example in \Cref{fig:customerMonth}.
 
 \begin{figure}[htb]
 \centering
@@ -97,7 +97,7 @@ A critical step of the state-cluster-observation Markov chain is the mixture mod
 \item It is Bayesian and treats component parameters as random variables, of which posterior distributions will be updated from a prior as observed data coming in. 
 \item The Dirichlet process (DP) is used as a nonparametric prior resulting in that the number of clusters is random and grows as new data are observed.
 \end{enumerate}
-The benefits of this model choice are massive. It does not view the observed data as infinitely available as independent replicates like frequentists, so that it can be updated with new data coming in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
+The benefits of this model choice are massive. Unlike a frequentist's viewpoint, where the observed data as infinitely available as independent replicates, here it can be updated with new data as this comes in. Moreover, it infers the number of clusters from observed data, and opens the opportunities of finding new clusters as more data are observed.
 
 \section{Modelling Pipeline}
 
@@ -190,7 +190,7 @@ State assignment for new pupils as well as their associated level of churn risk.
 
 \section{Clustering Analytics}
 
-We assume that most features can be described by mixture of multivariate Gaussians. For those whose empirical distribution deviates too much from a Gaussian, we verify their independence from other features and model them as a general mixture of any suitable simple distribution such as uniform, exponential, etc. Examples are shown in \Cref{fig:fitIndependentFeature}.
+We assume that most features can be described by a mixture of multivariate Gaussians. For those whose empirical distribution deviates too much from a Gaussian, we verify their independence from other features and model them as a general mixture of any suitable simple distribution such as uniform, exponential, etc. Examples are shown in \Cref{fig:fitIndependentFeature}.
 
 \begin{figure}[!h]
 \centering
@@ -204,7 +204,7 @@ We assume that most features can be described by mixture of multivariate Gaussia
 \subsubsection*{Cluster Churn Rate}
 \addcontentsline{toc}{subsection}{Cluster Churn Rate}
 
-We combine the clusters inferred from independent and multivariate features together. For each identified cluster, because we know the churn outcome, we can calculate the proportion of churners, called the \textit{cluster churn rate}. In \Cref{fig:cluster} we show the average cluster size and the associated churn rate. By ``average'', we calculate the average size for clusters of the same churn rate.
+We combine the clusters inferred from independent and multivariate features together. For each identified cluster, because we know the churn outcome, we can calculate the proportion of churners, called the \textit{cluster churn rate}. In \Cref{fig:cluster} we show the average cluster size and the associated churn rate. The ``average'' here is the average size for clusters of the same churn rate.
 
 \begin{figure}[htb]
 \centering
@@ -215,7 +215,7 @@ We combine the clusters inferred from independent and multivariate features toge
 \label{fig:cluster}
 \end{figure}
 
-The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for those extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to churn.
+The model identifies a couple of clusters with 100\% and 0\% churn rate. However, the cluster size is really small for these extreme high/low churn rate. This implies that it is much easier to identify ``normal'' customers where the churn probability is around the population average, but really challenging to distinguish ``risky'' or ``safe'' customers who have very high or low chance to churn.
 
 \subsection*{Churn Probability and Markov State}
 \addcontentsline{toc}{subsection}{Churn Probability and Markov State}
@@ -224,7 +224,7 @@ The model identifies a couple of clusters with 100\% and 0\% churn rate. However
 
 Because we have assumed that each pupil has independent behaviours from others, and that customer month are independent in leading to churn outcome, we can interpret the cluster churn rate as the probability of churn of each individual pupil in that cluster. This allows us to have the distribution of individual churn probabilities, shown in left of \Cref{fig:state}.
 
-Looking at the distribution of churn probabilities, we can observe a few concentrations of pupils centered at churn probabilities approximately 0\%, 12\%, 25\%. If the behaviour based model does not work at all, the inferred churn probabilities will be purely random, which will converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:state} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours than those otherwise.
+Looking at the distribution of churn probabilities, we can observe a few concentrations of pupils centered at churn probabilities of approximately 0\%, 12\%, and 25\%. If the behaviour based model did not work at all, the inferred churn probabilities would be purely random, and would converge to a normal distribution due to central limit theorem. Distributions shown in \Cref{fig:state} are definitely not normal. This has shown that the behaviour based model has the predictive power to distinguish pupils with very different churn probabilities. In other words, pupils with the intention to churn exhibit different behaviours from other pupils.
 
 \begin{figure}[htb]
 \vspace*{-3mm}
@@ -235,7 +235,7 @@ Looking at the distribution of churn probabilities, we can observe a few concent
 \label{fig:state}
 \end{figure}
 
-We define the Markov states by grouping together clusters of similar churn rates because we want the states to indicate churn risk level. In right of \Cref{fig:state} we show an example. We choose to form 4 states $S_1$, $S_2$, $S_3$ and $S_4$ by grouping clusters according to 3 anchor points: 0.3, 0.22, 0.35 (the three vertical dashed line shown on the left plot). The state churn rates are 0.0\%, 11.7\%, 25.4\% and 55.6\% respectively. Therefore, we can say $S_1$ is the safest state where pupils in this state are very unlikely to churn. In contrast, $S_4$ is a risky state in the sense that pupils in this state are 5.5 times more likely than average to cancel the subscription.
+We define the Markov states by grouping together clusters of similar churn rates because we want the states to indicate churn risk level. In right of \Cref{fig:state} we show an example. We choose to form 4 states $S_1$, $S_2$, $S_3$ and $S_4$ by grouping clusters according to 3 anchor points: 0.3, 0.22, and 0.35 (the three vertical dashed line shown on the left plot). The state churn rates are 0.0\%, 11.7\%, 25.4\% and 55.6\% respectively. Therefore, we can say $S_1$ is the safest state where pupils in this state are very unlikely to churn. In contrast, $S_4$ is a risky state in the sense that pupils in this state are 5.5 times more likely than average to cancel the subscription.
 
 \subsection*{Transitional Analysis}
 \addcontentsline{toc}{subsection}{Transitional Analysis}
@@ -258,9 +258,9 @@ The transition probabilities are visualised in \Cref{fig:sankey} as a Sankey dia
 
 To help predict churn risk of pupils from the subscription to Whizz online tutorial service, we have proposed a mixture based model which identifies behaviour clusters associated with distinguished levels of churn rate. Moreover, we fit this model into a Markov chain setting to allow us understand temporal customer behavioural path. The sequential modelling processes have been formulated into a scalable pipeline that can be easily reused, updated and extended.
 
-We describe customer behaviours as a result of the state-cluster-observation generative process. The mixture based model can infer clusters from observed behaviours, and clusters will be grouped to form states by bespoke risk appetite. We have formed 4 states from Whizz's data where the ``riskiest'' state has a churn rate 5.5 time higher then the population average. The model trained from observed data can then be used to make prediction on the churn risk of active pupils, and also analyse the potential causes of such risk.
+We describe customer behaviours using a state-cluster-observation generative process. The mixture based model infers clusters from observed behaviours, and clusters are grouped to form states by bespoke risk appetite. We have formed 4 states from Whizz's data where the ``riskiest'' state has a churn rate 5.5 time higher then the population average. The model, trained from observed data, is then used to make prediction on the churn risk of active pupils, and also analyses the potential causes of such risk.
 
-I'm very confident about this mixture based behavioural model approach in churn prediction. There's room for future work. First, we have not discussed in details about the feature selection and feature engineering, though the model itself can absorb any number of features. Selecting independent, informative features may greatly improve the clustering outcome and prediction accuracy. There is room to mine useful information from Whizz's pupils activity database. Second, it is possible to extend the analysis about how feature impacts churn risk. One direction is to find a way to compare feature importance, which translates into measuring importance of dimensions in a multivariate setting. This will be very useful to help the downstream CRM team to prioritise retention strategies.  
+This mixture based behavioural model in churn prediction appeals to be a good approach and there is room for future work. First, we have not discussed in details about the feature selection and feature engineering, though the model itself can absorb any number of features. Selecting independent, informative features may greatly improve the clustering outcome and prediction accuracy. There is room to mine useful information from Whizz's pupils activity database. Second, it is possible to extend the analysis about how feature impacts churn risk. One direction is to find a way to compare feature importance, which translates into measuring importance of dimensions in a multivariate setting. This will be very useful to help the downstream CRM team to prioritise retention strategies.  
 
 Dr. Junaid Mubeen, Director of Education at Whizz Education said: ``\emph{We are very pleased with Victor's contribution. He has addressed our key requirement of developing a model that allows us to predict the likelihood of home users cancelling their subscription from one month to the next. Discussions are already underway with our Development and Marketing teams to understand how we can make use of Victor's model on a continual basis to turn around customers ``at risk'' of cancelling. Victor has also illuminated a number of Machine Learning strategies that we can see having applications in other business problems.}''
 
